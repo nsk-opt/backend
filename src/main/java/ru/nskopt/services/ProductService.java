@@ -3,13 +3,13 @@ package ru.nskopt.services;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.java.Log;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import ru.nskopt.models.Category;
 import ru.nskopt.models.Product;
 import ru.nskopt.repositories.ProductRepository;
 
-@Log
+@Log4j2
 @Service
 @RequiredArgsConstructor
 public class ProductService {
@@ -25,7 +25,7 @@ public class ProductService {
   }
 
   public Product save(Product product) {
-    log.info("Save product " + product);
+    log.info("Save product {}", product);
     return productRepository.save(product);
   }
 
@@ -42,7 +42,7 @@ public class ProductService {
     product.getCategories().add(category);
     productRepository.save(product);
 
-    log.info("Add category \"" + category.getName() + "\" to " + product.getName());
+    log.info("Add category {} to {}", category.getName(), product.getName());
   }
 
   public void removeCategoryFromProduct(Long productId, Long categoryId) {
@@ -54,6 +54,6 @@ public class ProductService {
     product.getCategories().removeIf(category -> category.getId().equals(categoryId));
     productRepository.save(product);
 
-    log.info("Remove category with id \"" + categoryId + "\" from " + product.getName());
+    log.info("Remove category with id {} from {}", categoryId, product.getName());
   }
 }

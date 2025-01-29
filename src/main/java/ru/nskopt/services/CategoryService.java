@@ -3,12 +3,12 @@ package ru.nskopt.services;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.java.Log;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import ru.nskopt.models.Category;
 import ru.nskopt.repositories.CategoryRepository;
 
-@Log
+@Log4j2
 @Service
 @RequiredArgsConstructor
 public class CategoryService {
@@ -24,11 +24,12 @@ public class CategoryService {
   }
 
   public Category save(Category category) {
-    log.info("Save category " + category);
+    log.info("Save category {}", category);
     return categoryRepository.save(category);
   }
 
   public void deleteById(Long id) {
+    log.info("Delete category with id {}", id);
     categoryRepository.deleteById(id);
   }
 }
