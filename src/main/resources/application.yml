@@ -10,3 +10,11 @@ spring:
 
     hibernate:
       ddl-auto: update
+
+logging:
+  file:
+    path: /var/logs/
+    file: nsk-opt-tg-app-backend.log
+  level:
+    root: WARN
+    ru.nskopt: INFO
