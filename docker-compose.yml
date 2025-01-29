@@ -1,16 +1,15 @@
 services:
   app:
-    image: gradle
-    working_dir: /app
-    volumes:
-      - .:/app
+    build: .
+    container_name: tg-app-backend
     environment:
       DB_HOST: db
       DB_PORT: ${DB_PORT}
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
-    command: ./gradlew bootRun
+    volumes:
+      - ./logs:/var/logs
     ports:
       - "8080:8080"
     depends_on:
