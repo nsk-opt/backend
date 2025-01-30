@@ -1,5 +1,6 @@
 package ru.nskopt.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -14,6 +15,7 @@ import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Entity
 @Table(name = "categories")
@@ -33,5 +35,7 @@ public class Category {
   private Image image;
 
   @ManyToMany(mappedBy = "categories")
+  @JsonIgnore
+  @ToString.Exclude
   private Set<Product> products = new HashSet<>();
 }
