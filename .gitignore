@@ -6,3 +6,5 @@ bin
 logs/
 
 .env
+.gigaide/
+.idea
