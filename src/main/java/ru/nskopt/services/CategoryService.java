@@ -24,7 +24,7 @@ public class CategoryService {
   }
 
   public Category save(Category category) {
-    log.info("Save category {}", category);
+    log.info("Save {}", category);
     return categoryRepository.save(category);
   }
 

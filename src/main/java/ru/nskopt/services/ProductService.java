@@ -25,11 +25,12 @@ public class ProductService {
   }
 
   public Product save(Product product) {
-    log.info("Save product {}", product);
+    log.info("Save {}", product);
     return productRepository.save(product);
   }
 
   public void deleteById(Long id) {
+    log.info("Delete product with id {}", id);
     productRepository.deleteById(id);
   }
 
@@ -42,7 +43,7 @@ public class ProductService {
     product.getCategories().add(category);
     productRepository.save(product);
 
-    log.info("Add category {} to {}", category.getName(), product.getName());
+    log.info("Add {} to {}", category, product);
   }
 
   public void removeCategoryFromProduct(Long productId, Long categoryId) {
@@ -54,6 +55,6 @@ public class ProductService {
     product.getCategories().removeIf(category -> category.getId().equals(categoryId));
     productRepository.save(product);
 
-    log.info("Remove category with id {} from {}", categoryId, product.getName());
+    log.info("Remove category with id {} from {}", categoryId, productId);
   }
 }
