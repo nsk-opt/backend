@@ -4,7 +4,6 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,8 +12,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import ru.nskopt.models.Category;
+import ru.nskopt.models.entities.Category;
 import ru.nskopt.services.CategoryService;
 
 @RestController
@@ -26,45 +26,33 @@ public class CategoryController {
   private final CategoryService categoryService;
 
   @GetMapping
-  public ResponseEntity<List<Category>> getAllCategories() {
-    List<Category> categories = categoryService.findAll();
-    return new ResponseEntity<>(categories, HttpStatus.OK);
+  public List<Category> getAllCategories() {
+    return categoryService.findAll();
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<Category> getCategoryById(@PathVariable Long id) {
-    return categoryService
-        .findById(id)
-        .map(category -> new ResponseEntity<>(category, HttpStatus.OK))
-        .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
+  public Category getCategoryById(@Valid @PathVariable Long id) {
+    return categoryService.findById(id);
   }
 
   @PostMapping
-  public ResponseEntity<Category> createCategory(@Valid @RequestBody Category category) {
-    Category savedCategory = categoryService.save(category);
-    return new ResponseEntity<>(savedCategory, HttpStatus.CREATED);
+  public Category createCategory(@Valid @RequestBody Category category) {
+    return categoryService.save(category);
   }
 
   @PutMapping("/{id}")
-  public ResponseEntity<Category> updateCategory(
-      @PathVariable Long id, @Valid @RequestBody Category category) {
+  public Category updateCategory(
+      @PathVariable Long id, @Valid @RequestBody Category updatedCategory) {
 
-    if (categoryService.findById(id).isEmpty()) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    categoryService.findById(id);
+    updatedCategory.setId(id);
 
-    category.setId(id);
-    Category updatedCategory = categoryService.save(category);
-
-    return new ResponseEntity<>(updatedCategory, HttpStatus.OK);
+    return categoryService.save(updatedCategory);
   }
 
+  @ResponseStatus(HttpStatus.NO_CONTENT)
   @DeleteMapping("/{id}")
-  public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
-    if (categoryService.findById(id).isEmpty()) {
-      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-    }
-
+  public void deleteCategory(@PathVariable Long id) {
     categoryService.deleteById(id);
-
-    return new ResponseEntity<>(HttpStatus.NO_CONTENT);
   }
 }

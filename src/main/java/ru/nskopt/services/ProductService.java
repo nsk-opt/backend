@@ -1,12 +1,12 @@
 package ru.nskopt.services;
 
 import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.nskopt.models.Category;
-import ru.nskopt.models.Product;
+import ru.nskopt.exceptions.ResourceNotFoundException;
+import ru.nskopt.models.entities.Category;
+import ru.nskopt.models.entities.Product;
 import ru.nskopt.repositories.ProductRepository;
 
 @Slf4j
@@ -15,13 +15,16 @@ import ru.nskopt.repositories.ProductRepository;
 public class ProductService {
 
   private final ProductRepository productRepository;
+  private final CategoryService categoryService;
 
   public List<Product> findAll() {
     return productRepository.findAll();
   }
 
-  public Optional<Product> findById(Long id) {
-    return productRepository.findById(id);
+  public Product findById(Long id) {
+    return productRepository
+        .findById(id)
+        .orElseThrow(() -> new ResourceNotFoundException("Product with id " + id + " not found"));
   }
 
   public Product save(Product product) {
@@ -30,15 +33,17 @@ public class ProductService {
   }
 
   public void deleteById(Long id) {
+    if (!productRepository.existsById(id))
+      throw new ResourceNotFoundException("Product with id " + id + " not found");
+
     log.info("Delete product with id {}", id);
+
     productRepository.deleteById(id);
   }
 
-  public void addCategoryToProduct(Long productId, Category category) {
-    Product product =
-        productRepository
-            .findById(productId)
-            .orElseThrow(() -> new RuntimeException("Product not found"));
+  public void addCategory(Long productId, Long categoryId) {
+    Product product = findById(productId);
+    Category category = categoryService.findById(categoryId);
 
     product.getCategories().add(category);
     productRepository.save(product);
@@ -46,11 +51,8 @@ public class ProductService {
     log.info("Add {} to {}", category, product);
   }
 
-  public void removeCategoryFromProduct(Long productId, Long categoryId) {
-    Product product =
-        productRepository
-            .findById(productId)
-            .orElseThrow(() -> new RuntimeException("Product not found"));
+  public void removeCategory(Long productId, Long categoryId) {
+    Product product = findById(productId);
 
     product.getCategories().removeIf(category -> category.getId().equals(categoryId));
     productRepository.save(product);
