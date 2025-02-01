@@ -5,8 +5,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.nskopt.exceptions.ResourceNotFoundException;
+import ru.nskopt.mappers.Mapper;
 import ru.nskopt.models.entities.Category;
 import ru.nskopt.models.entities.Product;
+import ru.nskopt.models.requests.UpdateProductRequest;
 import ru.nskopt.repositories.ProductRepository;
 
 @Slf4j
@@ -15,6 +17,7 @@ import ru.nskopt.repositories.ProductRepository;
 public class ProductService {
 
   private final ProductRepository productRepository;
+  private final Mapper<Product, UpdateProductRequest> productMapper;
   private final CategoryService categoryService;
 
   public List<Product> findAll() {
@@ -27,9 +30,24 @@ public class ProductService {
         .orElseThrow(() -> new ResourceNotFoundException("Product with id " + id + " not found"));
   }
 
-  public Product save(Product product) {
-    log.info("Save {}", product);
-    return productRepository.save(product);
+  public Product save(UpdateProductRequest updateProductRequest) {
+    log.info("Save {}", updateProductRequest);
+
+    return productRepository.save(productMapper.map(updateProductRequest));
+  }
+
+  public Product update(Long id, UpdateProductRequest updateProductRequest) {
+    return productRepository
+        .findById(id)
+        .map(
+            existingProduct -> {
+              productMapper.update(existingProduct, updateProductRequest);
+
+              log.info("Update {}", existingProduct);
+
+              return productRepository.save(existingProduct);
+            })
+        .orElseThrow(() -> new ResourceNotFoundException("Product with id " + id + " not found"));
   }
 
   public void deleteById(Long id) {

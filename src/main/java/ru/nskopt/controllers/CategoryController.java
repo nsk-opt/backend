@@ -1,8 +1,6 @@
 package ru.nskopt.controllers;
 
-import jakarta.validation.Valid;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -14,44 +12,51 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import ru.nskopt.models.entities.Category;
+import ru.nskopt.models.requests.UpdateCategoryRequest;
 import ru.nskopt.services.CategoryService;
 
 @RestController
 @RequestMapping("/api/categories")
 @RequiredArgsConstructor
 @Validated
+@Tag(name = "Category controller")
 public class CategoryController {
 
   private final CategoryService categoryService;
 
   @GetMapping
+  @Operation(summary = "Get all categories")
   public List<Category> getAllCategories() {
     return categoryService.findAll();
   }
 
   @GetMapping("/{id}")
+  @Operation(summary = "Get category by id")
   public Category getCategoryById(@Valid @PathVariable Long id) {
     return categoryService.findById(id);
   }
 
   @PostMapping
-  public Category createCategory(@Valid @RequestBody Category category) {
-    return categoryService.save(category);
+  @Operation(summary = "Create category")
+  public Category createCategory(@Valid @RequestBody UpdateCategoryRequest updateCategoryRequest) {
+    return categoryService.save(updateCategoryRequest);
   }
 
   @PutMapping("/{id}")
-  public Category updateCategory(
-      @PathVariable Long id, @Valid @RequestBody Category updatedCategory) {
-
-    categoryService.findById(id);
-    updatedCategory.setId(id);
-
-    return categoryService.save(updatedCategory);
+  @Operation(summary = "Update category by id")
+  public Category updateCategory(@PathVariable Long id,
+      @Valid @RequestBody UpdateCategoryRequest updateCategoryRequest) {
+    return categoryService.update(id, updateCategoryRequest);
   }
 
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @DeleteMapping("/{id}")
+  @Operation(summary = "Delete category by id")
   public void deleteCategory(@PathVariable Long id) {
     categoryService.deleteById(id);
   }
