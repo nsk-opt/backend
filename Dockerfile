@@ -6,4 +6,6 @@ COPY . /app
 
 VOLUME [ "/var/logs" ]
 
-CMD ["./gradlew", "bootRun"]
+RUN chmod +x /app/misc/generate-ssl.sh
+
+CMD ["sh", "-c", "/app/misc/generate-ssl.sh && ./gradlew bootRun"]

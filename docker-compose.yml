@@ -8,6 +8,7 @@ services:
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
+      SSL_KEY_PASSWORD: ${SSL_KEY_PASSWORD}
     volumes:
       - ./logs:/var/logs
     ports:
