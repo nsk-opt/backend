@@ -1,7 +1,5 @@
 package ru.nskopt.models.entities;
 
-import java.util.HashSet;
-import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Embedded;
@@ -15,6 +13,8 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -33,8 +33,7 @@ public class Product {
 
   private String name;
 
-  @Embedded
-  private Cost cost;
+  @Embedded private Cost cost;
 
   private int availability;
 
@@ -45,7 +44,9 @@ public class Product {
   private Set<Image> images = new HashSet<>();
 
   @ManyToMany
-  @JoinTable(name = "product_category", joinColumns = @JoinColumn(name = "product_id"),
+  @JoinTable(
+      name = "product_category",
+      joinColumns = @JoinColumn(name = "product_id"),
       inverseJoinColumns = @JoinColumn(name = "category_id"))
   @JsonIgnore
   @ToString.Exclude

@@ -1,7 +1,7 @@
 package ru.nskopt.mappers;
 
-import org.springframework.stereotype.Component;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 import ru.nskopt.models.dtos.ImageDto;
 import ru.nskopt.models.entities.Category;
 import ru.nskopt.models.entities.Image;
