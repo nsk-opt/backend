@@ -5,10 +5,8 @@ SSL_CERTS_DIR="/app/ssl/certs"
 
 KEY_FILE="$SSL_PRIVATE_DIR/private.key"
 CERT_FILE="$SSL_CERTS_DIR/certificate.crt"
-P12_FILE="/app/src/main/resources/keystore.p12"
+COMBINED_FILE="/tmp/combined.pem"
 
-openssl req -x509 -newkey rsa:2048 -keyout $KEY_FILE -out $CERT_FILE -days 365 -nodes -subj "/CN=${SERVER_DOMAIN}" >/dev/null 2>&1
+cat $CERT_FILE $KEY_FILE >$COMBINED_FILE
 
-openssl pkcs12 -export -in $CERT_FILE -inkey $KEY_FILE -out $P12_FILE -name server -password pass:$SSL_KEY_PASSWORD >/dev/null 2>&1
-
-chmod 664 $P12_FILE
+openssl pkcs12 -export -in $COMBINED_FILE -out /app/src/main/resources/keystore.p12 -name server -password pass:$SSL_KEY_PASSWORD -noiter -nomaciter
