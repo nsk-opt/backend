@@ -3,6 +3,7 @@ package ru.nskopt.controllers;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import ru.nskopt.models.entities.Category;
 import ru.nskopt.models.entities.Product;
 import ru.nskopt.models.requests.UpdateProductRequest;
 import ru.nskopt.services.ProductService;
@@ -59,6 +61,11 @@ public class ProductController {
   @Operation(summary = "Delete product by id")
   public void deleteProduct(@PathVariable Long id) {
     productService.deleteById(id);
+  }
+
+  @GetMapping("/{productId}/categories")
+  public Set<Category> getCategories(@PathVariable Long productId) {
+    return productService.getCategoriesByProductId(productId);
   }
 
   @PostMapping("/{productId}/categories/{categoryId}")

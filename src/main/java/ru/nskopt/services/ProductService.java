@@ -1,6 +1,7 @@
 package ru.nskopt.services;
 
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,9 +26,7 @@ public class ProductService {
   }
 
   public Product findById(Long id) {
-    return productRepository
-        .findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("Product with id " + id + " not found"));
+    return productRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(id));
   }
 
   public Product save(UpdateProductRequest updateProductRequest) {
@@ -47,16 +46,21 @@ public class ProductService {
 
               return productRepository.save(existingProduct);
             })
-        .orElseThrow(() -> new ResourceNotFoundException("Product with id " + id + " not found"));
+        .orElseThrow(() -> new ResourceNotFoundException(id));
   }
 
   public void deleteById(Long id) {
-    if (!productRepository.existsById(id))
-      throw new ResourceNotFoundException("Product with id " + id + " not found");
+    if (!productRepository.existsById(id)) throw new ResourceNotFoundException(id);
 
     log.info("Delete product with id {}", id);
 
     productRepository.deleteById(id);
+  }
+
+  public Set<Category> getCategoriesByProductId(Long id) {
+    if (!productRepository.existsById(id)) throw new ResourceNotFoundException(id);
+
+    return productRepository.findCategoriesByProductId(id);
   }
 
   public void addCategory(Long productId, Long categoryId) {
