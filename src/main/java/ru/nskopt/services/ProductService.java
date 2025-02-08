@@ -16,6 +16,7 @@ import ru.nskopt.repositories.ProductRepository;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ProductService {
 
   private final ProductRepository productRepository;
@@ -62,7 +63,6 @@ public class ProductService {
     return productRepository.findCategoriesByProductId(id);
   }
 
-  @Transactional
   public void addCategory(Long productId, Long categoryId) {
     Product product = findById(productId);
     Category category = categoryService.findById(categoryId);
