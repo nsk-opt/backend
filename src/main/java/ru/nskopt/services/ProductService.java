@@ -2,9 +2,10 @@ package ru.nskopt.services;
 
 import java.util.List;
 import java.util.Set;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 import ru.nskopt.exceptions.ResourceNotFoundException;
 import ru.nskopt.mappers.Mapper;
 import ru.nskopt.models.entities.Category;
@@ -36,21 +37,18 @@ public class ProductService {
   }
 
   public Product update(Long id, UpdateProductRequest updateProductRequest) {
-    return productRepository
-        .findById(id)
-        .map(
-            existingProduct -> {
-              productMapper.update(existingProduct, updateProductRequest);
+    return productRepository.findById(id).map(existingProduct -> {
+      productMapper.update(existingProduct, updateProductRequest);
 
-              log.info("Update {}", existingProduct);
+      log.info("Update {}", existingProduct);
 
-              return productRepository.save(existingProduct);
-            })
-        .orElseThrow(() -> new ResourceNotFoundException(id));
+      return productRepository.save(existingProduct);
+    }).orElseThrow(() -> new ResourceNotFoundException(id));
   }
 
   public void deleteById(Long id) {
-    if (!productRepository.existsById(id)) throw new ResourceNotFoundException(id);
+    if (!productRepository.existsById(id))
+      throw new ResourceNotFoundException(id);
 
     log.info("Delete product with id {}", id);
 
@@ -58,11 +56,13 @@ public class ProductService {
   }
 
   public Set<Category> getCategoriesByProductId(Long id) {
-    if (!productRepository.existsById(id)) throw new ResourceNotFoundException(id);
+    if (!productRepository.existsById(id))
+      throw new ResourceNotFoundException(id);
 
     return productRepository.findCategoriesByProductId(id);
   }
 
+  @Transactional
   public void addCategory(Long productId, Long categoryId) {
     Product product = findById(productId);
     Category category = categoryService.findById(categoryId);
