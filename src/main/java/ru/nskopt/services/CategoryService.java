@@ -23,9 +23,7 @@ public class CategoryService {
   }
 
   public Category findById(Long id) {
-    return categoryRepository
-        .findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("Category with id " + id + " not found"));
+    return categoryRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(id));
   }
 
   public Category save(UpdateCategoryRequest updateCategoryRequest) {
@@ -45,12 +43,11 @@ public class CategoryService {
 
               return categoryRepository.save(existingCategory);
             })
-        .orElseThrow(() -> new ResourceNotFoundException("Category with id " + id + " not found"));
+        .orElseThrow(() -> new ResourceNotFoundException(id));
   }
 
   public void deleteById(Long id) {
-    if (!categoryRepository.existsById(id))
-      throw new ResourceNotFoundException("Category with id " + id + " not found");
+    if (!categoryRepository.existsById(id)) throw new ResourceNotFoundException(id);
 
     log.info("Delete category with id {}", id);
     categoryRepository.deleteById(id);

@@ -25,9 +25,7 @@ public class ProductService {
   }
 
   public Product findById(Long id) {
-    return productRepository
-        .findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("Product with id " + id + " not found"));
+    return productRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(id));
   }
 
   public Product save(UpdateProductRequest updateProductRequest) {
@@ -47,12 +45,11 @@ public class ProductService {
 
               return productRepository.save(existingProduct);
             })
-        .orElseThrow(() -> new ResourceNotFoundException("Product with id " + id + " not found"));
+        .orElseThrow(() -> new ResourceNotFoundException(id));
   }
 
   public void deleteById(Long id) {
-    if (!productRepository.existsById(id))
-      throw new ResourceNotFoundException("Product with id " + id + " not found");
+    if (!productRepository.existsById(id)) throw new ResourceNotFoundException(id);
 
     log.info("Delete product with id {}", id);
 
