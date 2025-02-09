@@ -2,7 +2,15 @@ FROM gradle:8.12
 
 WORKDIR /app
 
-COPY . /app
+COPY ./src/ /app/src/
+COPY ./gradle/ /app/gradle/
+COPY ./misc/ /app/misc/
+COPY ./.env /app
+COPY ./build.gradle.kts /app
+COPY ./gradle.properties /app
+COPY ./gradlew /app
+COPY ./settings.gradle.kts /app
+COPY ./ssl/ /app/ssl/
 
 RUN chmod +x /app/misc/generate-ssl.sh
 

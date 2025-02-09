@@ -21,6 +21,7 @@ services:
 
   db:
     image: postgres
+    container_name: tg-app-backend-db
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
@@ -29,6 +30,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   test:
+    container_name: tg-app-backend-test
     build:
       context: .
       dockerfile: Dockerfile.test
@@ -47,6 +49,7 @@ services:
 
   db-test:
     image: postgres
+    container_name: tg-app-backend-test-db
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}

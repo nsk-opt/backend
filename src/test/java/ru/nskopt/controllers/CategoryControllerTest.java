@@ -1,11 +1,15 @@
 package ru.nskopt.controllers;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,6 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.nskopt.App;
+import ru.nskopt.mappers.CategoryMapper;
 import ru.nskopt.models.dtos.ImageDto;
 import ru.nskopt.models.entities.Category;
 import ru.nskopt.models.entities.Image;
@@ -31,6 +36,8 @@ class CategoryControllerTest {
 
   private ObjectMapper objectMapper = new ObjectMapper();
 
+  @Autowired CategoryMapper categoryMapper;
+
   private Category existsCategory;
 
   void refillDb() {
@@ -46,6 +53,36 @@ class CategoryControllerTest {
   @BeforeEach
   void setup() {
     refillDb();
+  }
+
+  public Category getCategoryFromResponse(String response) throws JsonProcessingException {
+    JsonNode jsonNode = objectMapper.readTree(response);
+
+    Long id = jsonNode.get("id").asLong();
+    String name = jsonNode.get("name").asText();
+
+    JsonNode imageNode = jsonNode.get("image");
+    Image image = null;
+    if (imageNode != null) {
+      Long imageId = imageNode.get("id").asLong();
+      String imageLink = imageNode.get("link").asText();
+      image = new Image(imageId, imageLink);
+    }
+
+    Category category = new Category();
+    category.setId(id);
+    category.setName(name);
+    category.setImage(image);
+
+    return category;
+  }
+
+  boolean isCategoriesEquals(String firstResponse, String secondResponse)
+      throws JsonProcessingException {
+    Category firstCategory = getCategoryFromResponse(firstResponse);
+    Category secondCategory = getCategoryFromResponse(secondResponse);
+
+    return firstCategory.equals(secondCategory);
   }
 
   @Test
@@ -94,13 +131,24 @@ class CategoryControllerTest {
     request.setName("Pants");
     request.setImage(new ImageDto("https://imgur.com/testImage"));
 
-    mvc.perform(
-            post("/api/categories")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isCreated())
-        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$.name").value("Pants"));
+    Category sendCategory = categoryMapper.map(request);
+
+    String responseString =
+        mvc.perform(
+                post("/api/categories")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isCreated())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    Category receiveCategory = getCategoryFromResponse(responseString);
+    sendCategory.setId(receiveCategory.getId());
+    sendCategory.getImage().setId(receiveCategory.getImage().getId());
+
+    assertTrue(receiveCategory.equals(sendCategory));
   }
 
   @Test
@@ -110,14 +158,24 @@ class CategoryControllerTest {
     UpdateCategoryRequest request = new UpdateCategoryRequest();
     request.setName("Pan");
     request.setImage(new ImageDto("https://imgur.com/testImage"));
+    Category sendCategory = categoryMapper.map(request);
 
-    mvc.perform(
-            post("/api/categories")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isCreated())
-        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$.name").value("Pan"));
+    String responseString =
+        mvc.perform(
+                post("/api/categories")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isCreated())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    Category receiveCategory = getCategoryFromResponse(responseString);
+    sendCategory.setId(receiveCategory.getId());
+    sendCategory.getImage().setId(receiveCategory.getImage().getId());
+
+    assertTrue(receiveCategory.equals(sendCategory));
   }
 
   @Test
@@ -128,13 +186,24 @@ class CategoryControllerTest {
     request.setName("Pangkjreodjtjed");
     request.setImage(new ImageDto("https://imgur.com/testImage"));
 
-    mvc.perform(
-            post("/api/categories")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isCreated())
-        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$.name").value(request.getName()));
+    Category sendCategory = categoryMapper.map(request);
+
+    String responseString =
+        mvc.perform(
+                post("/api/categories")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isCreated())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    Category receiveCategory = getCategoryFromResponse(responseString);
+    sendCategory.setId(receiveCategory.getId());
+    sendCategory.getImage().setId(receiveCategory.getImage().getId());
+
+    assertTrue(receiveCategory.equals(sendCategory));
   }
 
   @Test
@@ -165,5 +234,59 @@ class CategoryControllerTest {
         .andExpect(status().isBadRequest())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.error").exists());
+  }
+
+  @Test
+  void updateCategory_success() throws Exception {
+    repository.deleteAll();
+
+    UpdateCategoryRequest request = new UpdateCategoryRequest();
+    request.setName("Pants");
+    request.setImage(new ImageDto("https://imgur.com/testImage"));
+
+    Category sendCategory = categoryMapper.map(request);
+
+    String responseString =
+        mvc.perform(
+                post("/api/categories")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isCreated())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    Category receiveCategory = getCategoryFromResponse(responseString);
+    sendCategory.setId(receiveCategory.getId());
+    sendCategory.getImage().setId(receiveCategory.getImage().getId());
+
+    assertTrue(receiveCategory.equals(sendCategory));
+
+    //
+    //
+    //
+
+    request.setName("Sweater");
+    request.setImage(new ImageDto("https://imgur.com/newImageLol"));
+
+    sendCategory = categoryMapper.map(request);
+
+    responseString =
+        mvc.perform(
+                put("/api/categories/" + receiveCategory.getId())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    receiveCategory = getCategoryFromResponse(responseString);
+    sendCategory.setId(receiveCategory.getId());
+    sendCategory.getImage().setId(receiveCategory.getImage().getId());
+
+    assertTrue(receiveCategory.equals(sendCategory));
   }
 }
