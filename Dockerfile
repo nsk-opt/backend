@@ -1,10 +1,8 @@
-FROM gradle:latest
+FROM gradle:8.12
 
 WORKDIR /app
 
 COPY . /app
-
-VOLUME [ "/var/logs" ]
 
 RUN chmod +x /app/misc/generate-ssl.sh
 

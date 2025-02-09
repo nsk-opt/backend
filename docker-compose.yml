@@ -12,6 +12,7 @@ services:
       SERVER_DOMAIN: ${SERVER_DOMAIN}
     volumes:
       - ./logs:/var/logs
+      - ./reports:/app/build/reports
     ports:
       - "8443:8443"
     depends_on:

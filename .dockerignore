@@ -1,0 +1,13 @@
+.gradle/
+.git/
+.env-template
+.gitignore
+.gitattributes
+
+bin/
+build/
+logs/
+reports/
+docker-compose.yml
+Dockerfile
+LICENSE
