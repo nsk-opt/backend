@@ -5,6 +5,8 @@ build
 bin
 logs/
 
+reports
+
 .env
 .gigaide/
 .idea
