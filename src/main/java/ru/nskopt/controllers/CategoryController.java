@@ -1,10 +1,6 @@
 package ru.nskopt.controllers;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -16,6 +12,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import ru.nskopt.models.entities.Category;
 import ru.nskopt.models.requests.UpdateCategoryRequest;
 import ru.nskopt.services.CategoryService;
@@ -37,11 +37,12 @@ public class CategoryController {
 
   @GetMapping("/{id}")
   @Operation(summary = "Get category by id")
-  public Category getCategoryById(@Valid @PathVariable Long id) {
+  public Category getCategoryById(@PathVariable Long id) {
     return categoryService.findById(id);
   }
 
   @PostMapping
+  @ResponseStatus(HttpStatus.CREATED)
   @Operation(summary = "Create category")
   public Category createCategory(@Valid @RequestBody UpdateCategoryRequest updateCategoryRequest) {
     return categoryService.save(updateCategoryRequest);
@@ -49,8 +50,8 @@ public class CategoryController {
 
   @PutMapping("/{id}")
   @Operation(summary = "Update category by id")
-  public Category updateCategory(
-      @PathVariable Long id, @Valid @RequestBody UpdateCategoryRequest updateCategoryRequest) {
+  public Category updateCategory(@PathVariable Long id,
+      @Valid @RequestBody UpdateCategoryRequest updateCategoryRequest) {
     return categoryService.update(id, updateCategoryRequest);
   }
 

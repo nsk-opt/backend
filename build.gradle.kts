@@ -8,6 +8,8 @@ application {
 
 plugins {
   application
+  java
+  jacoco
 
   id("org.springframework.boot") version "3.4.2"
   id("io.spring.dependency-management") version "1.1.7"
@@ -24,6 +26,8 @@ dependencies {
 
   compileOnly("org.projectlombok:lombok")
   annotationProcessor("org.projectlombok:lombok")
+
+  testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
 configurations {
@@ -49,14 +53,7 @@ java {
   }
 }
 
-tasks.named("bootJar") {
-  dependsOn("spotlessApply")
-}
-
-tasks.named("bootRun") {
-  dependsOn("spotlessApply")
-}
-
-tasks.named("build") {
-  dependsOn("spotlessApply")
+tasks.withType<Test> {
+    useJUnitPlatform()
+    finalizedBy(tasks.jacocoTestReport)
 }
