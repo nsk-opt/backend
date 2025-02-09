@@ -1,11 +1,9 @@
 package ru.nskopt.responses;
 
 import java.time.LocalDateTime;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.Data;
 
-@Getter
-@RequiredArgsConstructor
+@Data
 public class ErrorResponse {
   private LocalDateTime timestamp = LocalDateTime.now();
 

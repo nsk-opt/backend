@@ -4,6 +4,10 @@ spring:
     username: ${DB_USER}
     password: ${DB_PASSWORD}
 
+  web:
+    resources:
+      add-mappings: false
+
   jpa:
     show-sql: false
     open-in-view: false
@@ -22,7 +26,7 @@ server:
   port: 8443
   ssl:
     enabled: true
-    key-store-type: 
+    key-store-type:
     key-store: classpath:keystore.p12
     key-store-password: ${SSL_KEY_PASSWORD}
     key-alias: server

@@ -7,7 +7,8 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class ImageDto {
-  @Pattern(regexp = "^(http|https)://.*$",
+  @Pattern(
+      regexp = "^(http|https)://.*$",
       message = "Link must be a valid URL starting with http or https")
   private String link;
 }

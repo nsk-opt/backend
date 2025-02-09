@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.NoHandlerFoundException;
 import ru.nskopt.exceptions.ResourceNotFoundException;
 import ru.nskopt.responses.ErrorResponse;
 
@@ -21,7 +22,14 @@ public class GlobalExceptionHandler {
   public ErrorResponse handleNotFoundException(ResourceNotFoundException e, WebRequest request) {
     log.info("Resource not found: {}, Request details: {}", e.getMessage(), request);
 
-    return new ErrorResponse(e.getMessage());
+    return new ErrorResponse("message: " + e.getMessage());
+  }
+
+  @ResponseStatus(HttpStatus.NOT_FOUND)
+  @ExceptionHandler(NoHandlerFoundException.class)
+  public ErrorResponse handleNoHandlerFoundException(
+      NoHandlerFoundException e, WebRequest request) {
+    return new ErrorResponse("Resource not found");
   }
 
   @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -41,14 +49,9 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(HttpMessageNotReadableException.class)
   public ErrorResponse handleHttpMessageNotReadableException(
       HttpMessageNotReadableException e, WebRequest request) {
-    String detailedError =
-        e.getMostSpecificCause() != null ? e.getMostSpecificCause().getMessage() : e.getMessage();
 
     log.info(
-        "Failed to read HTTP message. Detailed error: {}, Request details: {}, Message: {}",
-        detailedError,
-        request,
-        e.getMessage());
+        "Failed to read HTTP message. Request details: {}, Message: {}", request, e.getMessage());
 
     return new ErrorResponse("Invalid input. Please check your request format or parameters.");
   }
