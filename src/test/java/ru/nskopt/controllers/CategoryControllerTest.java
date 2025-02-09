@@ -8,6 +8,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,9 +19,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import ru.nskopt.App;
 import ru.nskopt.mappers.CategoryMapper;
 import ru.nskopt.models.dtos.ImageDto;
@@ -30,16 +31,13 @@ import ru.nskopt.repositories.CategoryRepository;
 @AutoConfigureMockMvc
 class CategoryControllerTest {
 
-  @Autowired
-  private MockMvc mvc;
+  @Autowired private MockMvc mvc;
 
-  @Autowired
-  private CategoryRepository repository;
+  @Autowired private CategoryRepository repository;
 
   private ObjectMapper objectMapper = new ObjectMapper();
 
-  @Autowired
-  CategoryMapper categoryMapper;
+  @Autowired CategoryMapper categoryMapper;
 
   private Category existsCategory;
 
@@ -91,7 +89,8 @@ class CategoryControllerTest {
   @Test
   void getAllCategories_notEmpty() throws Exception {
     mvc.perform(get("/api/categories").contentType(MediaType.APPLICATION_JSON))
-        .andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$[0].id").value(existsCategory.getId()))
         .andExpect(jsonPath("$[0].name").value(existsCategory.getName()));
   }
@@ -101,15 +100,18 @@ class CategoryControllerTest {
     repository.deleteAll();
 
     mvc.perform(get("/api/categories").contentType(MediaType.APPLICATION_JSON))
-        .andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$").isEmpty());
   }
 
   @Test
   void testGetCategoryById_exists() throws Exception {
     mvc.perform(
-        get("/api/categories/" + existsCategory.getId()).contentType(MediaType.APPLICATION_JSON))
-        .andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            get("/api/categories/" + existsCategory.getId())
+                .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.id").value(existsCategory.getId()))
         .andExpect(jsonPath("$.name").value(existsCategory.getName()));
   }
@@ -132,12 +134,16 @@ class CategoryControllerTest {
 
     Category sendCategory = categoryMapper.map(request);
 
-    String responseString = mvc
-        .perform(post("/api/categories").contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isCreated())
-        .andExpect(content().contentType(MediaType.APPLICATION_JSON)).andReturn().getResponse()
-        .getContentAsString();
+    String responseString =
+        mvc.perform(
+                post("/api/categories")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isCreated())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
 
     Category receiveCategory = getCategoryFromResponse(responseString);
     sendCategory.setId(receiveCategory.getId());
@@ -155,12 +161,16 @@ class CategoryControllerTest {
     request.setImage(new ImageDto("https://imgur.com/testImage"));
     Category sendCategory = categoryMapper.map(request);
 
-    String responseString = mvc
-        .perform(post("/api/categories").contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isCreated())
-        .andExpect(content().contentType(MediaType.APPLICATION_JSON)).andReturn().getResponse()
-        .getContentAsString();
+    String responseString =
+        mvc.perform(
+                post("/api/categories")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isCreated())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
 
     Category receiveCategory = getCategoryFromResponse(responseString);
     sendCategory.setId(receiveCategory.getId());
@@ -179,12 +189,16 @@ class CategoryControllerTest {
 
     Category sendCategory = categoryMapper.map(request);
 
-    String responseString = mvc
-        .perform(post("/api/categories").contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isCreated())
-        .andExpect(content().contentType(MediaType.APPLICATION_JSON)).andReturn().getResponse()
-        .getContentAsString();
+    String responseString =
+        mvc.perform(
+                post("/api/categories")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isCreated())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
 
     Category receiveCategory = getCategoryFromResponse(responseString);
     sendCategory.setId(receiveCategory.getId());
@@ -199,8 +213,11 @@ class CategoryControllerTest {
     request.setName("Pa");
     request.setImage(new ImageDto("https://imgur.com/testImage"));
 
-    mvc.perform(post("/api/categories").contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(request))).andExpect(status().isBadRequest())
+    mvc.perform(
+            post("/api/categories")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.error").exists());
   }
@@ -211,8 +228,11 @@ class CategoryControllerTest {
     request.setName("Pantsjh uhrwkdjre");
     request.setImage(new ImageDto("https://imgur.com/testImage"));
 
-    mvc.perform(post("/api/categories").contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(request))).andExpect(status().isBadRequest())
+    mvc.perform(
+            post("/api/categories")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.error").exists());
   }
@@ -227,12 +247,16 @@ class CategoryControllerTest {
 
     Category sendCategory = categoryMapper.map(request);
 
-    String responseString = mvc
-        .perform(post("/api/categories").contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isCreated())
-        .andExpect(content().contentType(MediaType.APPLICATION_JSON)).andReturn().getResponse()
-        .getContentAsString();
+    String responseString =
+        mvc.perform(
+                post("/api/categories")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isCreated())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
 
     Category receiveCategory = getCategoryFromResponse(responseString);
     sendCategory.setId(receiveCategory.getId());
@@ -249,12 +273,16 @@ class CategoryControllerTest {
 
     sendCategory = categoryMapper.map(request);
 
-    responseString = mvc
-        .perform(put("/api/categories/" + receiveCategory.getId())
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_JSON))
-        .andReturn().getResponse().getContentAsString();
+    responseString =
+        mvc.perform(
+                put("/api/categories/" + receiveCategory.getId())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
 
     receiveCategory = getCategoryFromResponse(responseString);
     sendCategory.setId(receiveCategory.getId());
@@ -271,8 +299,11 @@ class CategoryControllerTest {
     request.setName("Pants");
     request.setImage(new ImageDto("https://imgur.com/testImage"));
 
-    mvc.perform(put("/api/categories/999").contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(request))).andExpect(status().isNotFound())
+    mvc.perform(
+            put("/api/categories/999")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isNotFound())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON));
   }
 
@@ -287,7 +318,8 @@ class CategoryControllerTest {
     repository.deleteAll();
 
     mvc.perform(
-        delete("/api/categories/" + existsCategory.getId()).contentType(MediaType.APPLICATION_JSON))
+            delete("/api/categories/" + existsCategory.getId())
+                .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isNotFound())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON));
   }
