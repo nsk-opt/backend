@@ -3,59 +3,70 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.app
-    container_name: tg-app-backend
+
     environment:
-      DB_HOST: db
+      DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       SSL_KEY_PASSWORD: ${SSL_KEY_PASSWORD}
       SERVER_DOMAIN: ${SERVER_DOMAIN}
-    volumes:
-      - ./logs:/var/logs
+
     ports:
       - "8443:8443"
+
+    volumes:
+      - ./logs:/var/logs
+
     depends_on:
       - db
 
+  ###
+
   db:
     image: postgres
-    container_name: tg-app-backend-db
+
     environment:
       POSTGRES_DB: ${DB_NAME}
+      POSTGRES_PORT: ${DB_PORT}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  ###
+
   test:
-    container_name: tg-app-backend-test
     build:
       context: .
       dockerfile: Dockerfile.test
-    volumes:
-      - ./reports:/app/build/reports
+
     environment:
-      DB_HOST: db
+      DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       SSL_KEY_PASSWORD: ${SSL_KEY_PASSWORD}
       SERVER_DOMAIN: ${SERVER_DOMAIN}
+
+    volumes:
+      - ./reports:/app/build/reports
+
     depends_on:
       - db-test
 
+  ###
+
   db-test:
     image: postgres
-    container_name: tg-app-backend-test-db
+
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - /tmp/db-test-data:/var/lib/postgresql/data
 
 volumes:
   postgres_data:
