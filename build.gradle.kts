@@ -7,10 +7,12 @@ application {
 }
 
 plugins {
-  application
-  java
-  jacoco
+  // core
+  id("application")
+  id("java")
+  id("jacoco")
 
+  // community
   id("org.springframework.boot") version "3.4.2"
   id("io.spring.dependency-management") version "1.1.7"
   id("com.diffplug.spotless") version "6.25.0"
@@ -54,6 +56,6 @@ java {
 }
 
 tasks.withType<Test> {
-    useJUnitPlatform()
-    finalizedBy(tasks.jacocoTestReport)
+  useJUnitPlatform()
+  finalizedBy(tasks.jacocoTestReport)
 }
