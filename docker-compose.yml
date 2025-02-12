@@ -84,6 +84,9 @@ services:
     networks:
       - test-network
 
+    tmpfs:
+      - /var/lib/postgresql/data
+
 ###
 ###
 ###
