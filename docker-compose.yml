@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile.app
 
     environment:
-      DB_HOST: ${DB_HOST}
+      DB_HOST: app-db
       DB_PORT: ${DB_PORT}
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
@@ -20,11 +20,14 @@ services:
       - ./logs:/var/logs
 
     depends_on:
-      - db
+      - app-db
+
+    networks:
+      - app-network
 
   ###
 
-  db:
+  app-db:
     image: postgres
 
     environment:
@@ -36,6 +39,13 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+    networks:
+      - app-network
+
+  ###
+  ###
+  ###
+  ###
   ###
 
   test:
@@ -44,7 +54,7 @@ services:
       dockerfile: Dockerfile.test
 
     environment:
-      DB_HOST: ${DB_HOST}
+      DB_HOST: test-db
       DB_PORT: ${DB_PORT}
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
@@ -56,11 +66,14 @@ services:
       - ./reports:/app/build/reports
 
     depends_on:
-      - db-test
+      - test-db
+
+    networks:
+      - test-network
 
   ###
 
-  db-test:
+  test-db:
     image: postgres
 
     environment:
@@ -68,5 +81,18 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
 
+    networks:
+      - test-network
+
+###
+###
+###
+###
+###
+
 volumes:
   postgres_data:
+
+networks:
+  app-network:
+  test-network:
