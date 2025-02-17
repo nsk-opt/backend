@@ -1,9 +1,9 @@
 package ru.nskopt.services;
 
 import java.util.List;
+import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 import ru.nskopt.exceptions.ResourceNotFoundException;
 import ru.nskopt.mappers.Mapper;
 import ru.nskopt.models.entities.Category;
@@ -40,10 +40,14 @@ public class ProductService {
         .map(
             existingProduct -> {
               productMapper.update(existingProduct, updateProductRequest);
+              
+              log.info("Updating product with ID {}: {}", id, existingProduct);
 
-              log.info("Update {}", existingProduct);
+              Product updatedProduct = productRepository.save(existingProduct);
 
-              return productRepository.save(existingProduct);
+              log.info("Product updated successfully: {}", updatedProduct);
+
+              return updatedProduct;
             })
         .orElseThrow(() -> new ResourceNotFoundException(id));
   }
