@@ -1,13 +1,13 @@
 package ru.nskopt.models.requests;
 
+import java.util.HashSet;
+import java.util.Set;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
-import java.util.HashSet;
-import java.util.Set;
 import lombok.Data;
 import ru.nskopt.models.dtos.ImageDto;
 import ru.nskopt.models.entities.Cost;
@@ -29,5 +29,6 @@ public class UpdateProductRequest {
   private String description;
 
   @NotEmpty(message = "Must contains at least one image")
+  @Valid
   private Set<ImageDto> images = new HashSet<>();
 }
