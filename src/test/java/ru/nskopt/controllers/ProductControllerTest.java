@@ -5,6 +5,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
@@ -16,7 +18,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import ru.nskopt.App;
 import ru.nskopt.models.dtos.ImageDto;
 import ru.nskopt.models.entities.Cost;
@@ -112,8 +113,7 @@ class ProductControllerTest {
             });
   }
 
-  private void expectUpdatedProduct(Long id, UpdateProductRequest request)
-      throws Exception {
+  private void expectUpdatedProduct(Long id, UpdateProductRequest request) throws Exception {
     mockMvc
         .perform(
             put("/api/products/" + id)
@@ -147,8 +147,6 @@ class ProductControllerTest {
             });
   }
 
-
-
   private void expectCreateBadRequest(UpdateProductRequest request) throws Exception {
     mockMvc
         .perform(
@@ -163,7 +161,8 @@ class ProductControllerTest {
     expectUpdateBadRequest(id, request, status().isBadRequest());
   }
 
-  private void expectUpdateBadRequest(Long id, UpdateProductRequest request, ResultMatcher httpStatus) throws Exception {
+  private void expectUpdateBadRequest(
+      Long id, UpdateProductRequest request, ResultMatcher httpStatus) throws Exception {
     mockMvc
         .perform(
             put("/api/products/" + id)
@@ -338,13 +337,13 @@ class ProductControllerTest {
   @Test
   void updateProduct_notExists() throws Exception {
     UpdateProductRequest request =
-    createRequest(
-        "UPDATE PRODUCT",
-        5,
-        "New Description",
-        new BigDecimal("0.00"),
-        new BigDecimal("300.00"),
-        Set.of(new ImageDto("https://imgur.com/image")));
+        createRequest(
+            "UPDATE PRODUCT",
+            5,
+            "New Description",
+            new BigDecimal("0.00"),
+            new BigDecimal("300.00"),
+            Set.of(new ImageDto("https://imgur.com/image")));
 
     expectUpdateBadRequest(1L, request, status().isNotFound());
   }
@@ -352,24 +351,22 @@ class ProductControllerTest {
   @Test
   void updateProduct_successful() throws Exception {
     Product product =
-    createProduct(
-        "Test Product",
-        10,
-        "Test Description",
-        new BigDecimal("100.00"),
-        new BigDecimal("150.00"));
+        createProduct(
+            "Test Product",
+            10,
+            "Test Description",
+            new BigDecimal("100.00"),
+            new BigDecimal("150.00"));
 
     UpdateProductRequest request =
-    createRequest(
-        "UPDATE PROUCT",
-        5,
-        "New Description",
-        new BigDecimal("0.00"),
-        new BigDecimal("30.00"),
-        Set.of(new ImageDto("https://imgur.com/image")));
+        createRequest(
+            "UPDATE PROUCT",
+            5,
+            "New Description",
+            new BigDecimal("0.00"),
+            new BigDecimal("30.00"),
+            Set.of(new ImageDto("https://imgur.com/image")));
 
     expectUpdatedProduct(product.getId(), request);
-
   }
- 
 }
