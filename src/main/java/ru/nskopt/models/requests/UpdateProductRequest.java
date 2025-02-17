@@ -1,6 +1,7 @@
 package ru.nskopt.models.requests;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -18,7 +19,7 @@ public class UpdateProductRequest {
   @Schema(description = "Product name", example = "Кроссовки Nike air Monarch IV")
   private String name;
 
-  private Cost cost;
+  @Valid private Cost cost;
 
   @PositiveOrZero
   @Schema(description = "Number of availability products", example = "42")

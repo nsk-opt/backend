@@ -2,6 +2,7 @@ package ru.nskopt.controllers;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -43,14 +44,14 @@ public class ProductController {
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   @Operation(summary = "Create product")
-  public Product createProduct(@RequestBody UpdateProductRequest updateProductRequest) {
+  public Product createProduct(@Valid @RequestBody UpdateProductRequest updateProductRequest) {
     return productService.save(updateProductRequest);
   }
 
   @PutMapping("/{id}")
   @Operation(summary = "Update product by id")
   public Product updateProduct(
-      @PathVariable Long id, @RequestBody UpdateProductRequest updateProductRequest) {
+      @PathVariable Long id, @Valid @RequestBody UpdateProductRequest updateProductRequest) {
     return productService.update(id, updateProductRequest);
   }
 
