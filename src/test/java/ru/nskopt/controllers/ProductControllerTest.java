@@ -1,12 +1,11 @@
 package ru.nskopt.controllers;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
@@ -18,6 +17,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import ru.nskopt.App;
 import ru.nskopt.models.dtos.ImageDto;
 import ru.nskopt.models.entities.Cost;
@@ -145,6 +145,16 @@ class ProductControllerTest {
                 i++;
               }
             });
+  }
+
+  private void expectSuccessfulProductDeletion(Long id) throws Exception {
+    mockMvc.perform(delete("/api/products/" + id)).andExpect(status().isNoContent());
+
+    mockMvc.perform(get("/api/products/" + id)).andExpect(status().isNotFound());
+  }
+
+  private void expectNotFoundProductDeletion(Long id) throws Exception {
+    mockMvc.perform(delete("/api/products/" + id)).andExpect(status().isNotFound());
   }
 
   private void expectCreateBadRequest(UpdateProductRequest request) throws Exception {
@@ -349,7 +359,7 @@ class ProductControllerTest {
   }
 
   @Test
-  void updateProduct_successful() throws Exception {
+  void updateProduct_successful_1() throws Exception {
     Product product =
         createProduct(
             "Test Product",
@@ -368,5 +378,177 @@ class ProductControllerTest {
             Set.of(new ImageDto("https://imgur.com/image")));
 
     expectUpdatedProduct(product.getId(), request);
+  }
+
+  @Test
+  void updateProduct_successful_2() throws Exception {
+    Product product =
+        createProduct(
+            "Test Product",
+            10,
+            "Test Description",
+            new BigDecimal("100.00"),
+            new BigDecimal("150.00"));
+
+    UpdateProductRequest request =
+        createRequest(
+            "UPDATE PROUCT",
+            4,
+            "New Description",
+            new BigDecimal("154.00"),
+            new BigDecimal("30.00"),
+            Set.of(new ImageDto("https://imgur.com/image")));
+
+    expectUpdatedProduct(product.getId(), request);
+  }
+
+  @Test
+  void updateProduct_successful_4() throws Exception {
+    Product product =
+        createProduct(
+            "pants gucci",
+            1,
+            "Test Description",
+            new BigDecimal("100.00"),
+            new BigDecimal("150.00"));
+
+    UpdateProductRequest request =
+        createRequest(
+            "pants versace",
+            4,
+            "New Description",
+            new BigDecimal("154.00"),
+            new BigDecimal("30.00"),
+            Set.of(new ImageDto("https://imgur.com/image")));
+
+    expectUpdatedProduct(product.getId(), request);
+  }
+
+  @Test
+  void updateProduct_verification_invalid_name() throws Exception {
+    Product product =
+        createProduct(
+            "Test Product",
+            10,
+            "Test Description",
+            new BigDecimal("100.00"),
+            new BigDecimal("150.00"));
+
+    UpdateProductRequest request =
+        createRequest(
+            "UPDATE PROUCT TOO LONG NAME..",
+            5,
+            "New Description",
+            new BigDecimal("0.00"),
+            new BigDecimal("30.00"),
+            Set.of(new ImageDto("https://imgur.com/image")));
+
+    expectUpdateBadRequest(product.getId(), request);
+  }
+
+  @Test
+  void updateProduct_verification_invalid_cost_1() throws Exception {
+    Product product =
+        createProduct(
+            "Test Product",
+            10,
+            "Test Description",
+            new BigDecimal("100.00"),
+            new BigDecimal("150.00"));
+
+    UpdateProductRequest request =
+        createRequest(
+            "UPDATE PROUCT TOO LONG NAME..",
+            5,
+            "New Description",
+            new BigDecimal("-30.00"),
+            new BigDecimal("30.00"),
+            Set.of(new ImageDto("https://imgur.com/image")));
+
+    expectUpdateBadRequest(product.getId(), request);
+  }
+
+  @Test
+  void updateProduct_verification_invalid_cost_2() throws Exception {
+    Product product =
+        createProduct(
+            "Test Product",
+            10,
+            "Test Description",
+            new BigDecimal("100.00"),
+            new BigDecimal("150.00"));
+
+    UpdateProductRequest request =
+        createRequest(
+            "UPDATE PROUCT TOO LONG NAME..",
+            5,
+            "New Description",
+            new BigDecimal("-30.00"),
+            new BigDecimal("-30.00"),
+            Set.of(new ImageDto("https://imgur.com/image")));
+
+    expectUpdateBadRequest(product.getId(), request);
+  }
+
+  @Test
+  void updateProduct_verification_invalid_cost_3() throws Exception {
+    Product product =
+        createProduct(
+            "Test Product",
+            10,
+            "Test Description",
+            new BigDecimal("100.00"),
+            new BigDecimal("150.00"));
+
+    UpdateProductRequest request =
+        createRequest(
+            "UPDATE PROUCT TOO LONG NAME..",
+            5,
+            "New Description",
+            new BigDecimal("30.00"),
+            new BigDecimal("-30.00"),
+            Set.of(new ImageDto("https://imgur.com/image")));
+
+    expectUpdateBadRequest(product.getId(), request);
+  }
+
+  @Test
+  void updateProduct_verification_invalid_image() throws Exception {
+    Product product =
+        createProduct(
+            "Test Product",
+            10,
+            "Test Description",
+            new BigDecimal("100.00"),
+            new BigDecimal("150.00"));
+
+    UpdateProductRequest request =
+        createRequest(
+            "UPDATE PROUCT TOO LONG NAME..",
+            5,
+            "New Description",
+            new BigDecimal("30.00"),
+            new BigDecimal("-30.00"),
+            Set.of(new ImageDto("http://imgur.com/image")));
+
+    expectUpdateBadRequest(product.getId(), request);
+  }
+
+  @Test
+  void deleteProduct_successful() throws Exception {
+    Product product =
+        createProduct(
+            "Test Product",
+            10,
+            "Test Description",
+            new BigDecimal("100.00"),
+            new BigDecimal("150.00"));
+
+    expectSuccessfulProductDeletion(product.getId());
+  }
+
+  @Test
+  void deleteProduct_notFound() throws Exception {
+    expectNotFoundProductDeletion(444L);
   }
 }
