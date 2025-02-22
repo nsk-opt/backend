@@ -33,9 +33,12 @@ public class ProductMapper implements Mapper<Product, UpdateProductRequest> {
     product.setDescription(updateProductRequest.getDescription());
     product.setName(updateProductRequest.getName());
 
-    product.setImages(
-        updateProductRequest.getImages().stream()
-            .map(imageMapper::map)
-            .collect(Collectors.toSet()));
+    product.getImages().clear();
+    product
+        .getImages()
+        .addAll(
+            updateProductRequest.getImages().stream()
+                .map(imageMapper::map)
+                .collect(Collectors.toSet()));
   }
 }

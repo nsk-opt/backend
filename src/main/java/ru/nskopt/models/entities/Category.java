@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
@@ -32,10 +33,12 @@ public class Category {
 
   @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
   @JoinColumn(name = "category_id")
+  @EqualsAndHashCode.Exclude
   private Image image;
 
   @ManyToMany(mappedBy = "categories")
   @JsonIgnore
   @ToString.Exclude
+  @EqualsAndHashCode.Exclude
   private Set<Product> products = new HashSet<>();
 }

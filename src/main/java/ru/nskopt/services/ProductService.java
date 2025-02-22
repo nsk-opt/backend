@@ -1,6 +1,7 @@
 package ru.nskopt.services;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,8 +60,8 @@ public class ProductService {
 
     if (categoryIds.isEmpty()) log.info("Removed all categories for product ID {}", productId);
 
-    List<Category> categories =
-        categoryIds.stream().map(categoryService::findById).collect(Collectors.toList());
+    Set<Category> categories =
+        categoryIds.stream().map(categoryService::findById).collect(Collectors.toSet());
 
     product.getCategories().addAll(categories);
     productRepository.save(product);

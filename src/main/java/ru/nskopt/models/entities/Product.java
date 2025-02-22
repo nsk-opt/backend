@@ -17,6 +17,7 @@ import java.util.HashSet;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
@@ -41,6 +42,7 @@ public class Product {
 
   @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
   @JoinColumn(name = "product_id")
+  @EqualsAndHashCode.Exclude
   private Set<Image> images = new HashSet<>();
 
   @ManyToMany
@@ -50,5 +52,6 @@ public class Product {
       inverseJoinColumns = @JoinColumn(name = "category_id"))
   @JsonIgnore
   @ToString.Exclude
+  @EqualsAndHashCode.Exclude
   private Set<Category> categories = new HashSet<>();
 }
