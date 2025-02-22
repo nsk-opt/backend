@@ -648,6 +648,77 @@ class ProductControllerTest {
 
   @Test
   @Transactional
+  void getProductCategories_1() throws Exception {
+    Product product =
+        createProduct(
+            "Test Product",
+            10,
+            "Test Description",
+            new BigDecimal("100.00"),
+            new BigDecimal("150.00"));
+
+    Category category1 = new Category();
+    category1.setName("Category 1");
+    categoryRepository.save(category1);
+
+    Category category2 = new Category();
+    category2.setName("Category 2");
+    categoryRepository.save(category2);
+
+    product.getCategories().addAll(List.of(category1, category2));
+    productRepository.save(product);
+
+    mockMvc
+        .perform(
+            get("/api/products/" + product.getId() + "/categories")
+                .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(2))
+        .andExpect(jsonPath("$[0].id").value(category1.getId()))
+        .andExpect(jsonPath("$[0].name").value(category1.getName()))
+        .andExpect(jsonPath("$[1].id").value(category2.getId()))
+        .andExpect(jsonPath("$[1].name").value(category2.getName()));
+  }
+
+  @Test
+  @Transactional
+  void getProductCategories_2() throws Exception {
+    Product product =
+        createProduct(
+            "Test Product",
+            10,
+            "Test Description",
+            new BigDecimal("100.00"),
+            new BigDecimal("150.00"));
+
+    mockMvc
+        .perform(
+            get("/api/products/" + product.getId() + "/categories")
+                .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$").isEmpty());
+  }
+
+  @Test
+  @Transactional
+  void getProductCategories_notExists() throws Exception {
+    Product product =
+        createProduct(
+            "Test Product",
+            10,
+            "Test Description",
+            new BigDecimal("100.00"),
+            new BigDecimal("150.00"));
+
+    mockMvc
+        .perform(
+            get("/api/products/" + (product.getId() - 1) + "/categories")
+                .contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  @Transactional
   void updateCategories_delete_all() throws Exception {
     Product product =
         createProduct(
