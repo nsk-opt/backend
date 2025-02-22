@@ -22,6 +22,10 @@ public class ProductService {
   private final Mapper<Product, UpdateProductRequest> productMapper;
   private final CategoryService categoryService;
 
+  public void assertProductExists(Long id) {
+    if (!productRepository.existsById(id)) throw new ResourceNotFoundException(id);
+  }
+
   public List<Product> findAll() {
     return productRepository.findAll();
   }
@@ -67,5 +71,11 @@ public class ProductService {
     productRepository.save(product);
 
     log.info("Updated categories for product ID {}: {}", productId, categoryIds);
+  }
+
+  public Set<Category> getCategoriesByProductId(Long productId) {
+    assertProductExists(productId);
+
+    return productRepository.findCategoriesByProductId(productId);
   }
 }
