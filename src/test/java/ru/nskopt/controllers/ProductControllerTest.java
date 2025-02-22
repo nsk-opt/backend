@@ -379,7 +379,7 @@ class ProductControllerTest {
 
     UpdateProductRequest request =
         createRequest(
-            "UPDATE PROUCT",
+            "UPDATE PRODUCT",
             5,
             "New Description",
             new BigDecimal("0.00"),
@@ -401,7 +401,7 @@ class ProductControllerTest {
 
     UpdateProductRequest request =
         createRequest(
-            "UPDATE PROUCT",
+            "UPDATE PRODUCT",
             4,
             "New Description",
             new BigDecimal("154.00"),
@@ -445,7 +445,7 @@ class ProductControllerTest {
 
     UpdateProductRequest request =
         createRequest(
-            "UPDATE PROUCT TOO LONG NAME..",
+            "UPDATE PRODUCT TOO LONG NAME..",
             5,
             "New Description",
             new BigDecimal("0.00"),
@@ -467,7 +467,7 @@ class ProductControllerTest {
 
     UpdateProductRequest request =
         createRequest(
-            "UPDATE PROUCT TOO LONG NAME..",
+            "UPDATE PRODUCT TOO LONG NAME..",
             5,
             "New Description",
             new BigDecimal("-30.00"),
@@ -489,7 +489,7 @@ class ProductControllerTest {
 
     UpdateProductRequest request =
         createRequest(
-            "UPDATE PROUCT TOO LONG NAME..",
+            "UPDATE PRODUCT TOO LONG NAME..",
             5,
             "New Description",
             new BigDecimal("-30.00"),
@@ -511,7 +511,7 @@ class ProductControllerTest {
 
     UpdateProductRequest request =
         createRequest(
-            "UPDATE PROUCT TOO LONG NAME..",
+            "UPDATE PRODUCT TOO LONG NAME..",
             5,
             "New Description",
             new BigDecimal("30.00"),
@@ -533,7 +533,7 @@ class ProductControllerTest {
 
     UpdateProductRequest request =
         createRequest(
-            "UPDATE PROUCT TOO LONG NAME..",
+            "UPDATE PRODUCT TOO LONG NAME..",
             5,
             "New Description",
             new BigDecimal("30.00"),
