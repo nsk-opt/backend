@@ -5,7 +5,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 import ru.nskopt.exceptions.ResourceNotFoundException;
 import ru.nskopt.mappers.Mapper;
 import ru.nskopt.models.entities.Category;
@@ -16,6 +15,7 @@ import ru.nskopt.repositories.ProductRepository;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ProductService {
 
   private final ProductRepository productRepository;

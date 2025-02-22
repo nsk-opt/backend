@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import ru.nskopt.models.entities.Category;
+import ru.nskopt.models.entities.Product;
 import ru.nskopt.models.requests.UpdateCategoryRequest;
 import ru.nskopt.services.CategoryService;
 
@@ -74,5 +76,10 @@ public class CategoryController {
   public void deleteCategory(
       @Parameter(description = "ID категории", example = "1") @PathVariable Long id) {
     categoryService.deleteById(id);
+  }
+
+  @GetMapping("/{id}/products")
+  public Set<Product> getProductsByProductId(@PathVariable Long id) {
+    return categoryService.getProductsByCategoryId(id);
   }
 }
