@@ -1,6 +1,7 @@
 package ru.nskopt.controllers;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -24,41 +25,54 @@ import ru.nskopt.services.CategoryService;
 @RequestMapping("/api/categories")
 @RequiredArgsConstructor
 @Validated
-@Tag(name = "Category controller")
+@Tag(name = "Category Controller", description = "Управление категориями товаров")
 public class CategoryController {
 
   private final CategoryService categoryService;
 
   @GetMapping
-  @Operation(summary = "Get all categories")
+  @Operation(
+      summary = "Получить все категории",
+      description = "Возвращает список всех доступных категорий.")
   public List<Category> getAllCategories() {
     return categoryService.findAll();
   }
 
   @GetMapping("/{id}")
-  @Operation(summary = "Get category by id")
-  public Category getCategoryById(@PathVariable Long id) {
+  @Operation(
+      summary = "Получить категорию по ID",
+      description = "Возвращает категорию по её уникальному идентификатору.")
+  public Category getCategoryById(
+      @Parameter(description = "ID категории", example = "1") @PathVariable Long id) {
     return categoryService.findById(id);
   }
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
-  @Operation(summary = "Create category")
+  @Operation(
+      summary = "Создать новую категорию",
+      description = "Создаёт новую категорию на основе переданных данных.")
   public Category createCategory(@Valid @RequestBody UpdateCategoryRequest updateCategoryRequest) {
     return categoryService.save(updateCategoryRequest);
   }
 
   @PutMapping("/{id}")
-  @Operation(summary = "Update category by id")
+  @Operation(
+      summary = "Обновить категорию по ID",
+      description = "Обновляет данные категории по её уникальному идентификатору.")
   public Category updateCategory(
-      @PathVariable Long id, @Valid @RequestBody UpdateCategoryRequest updateCategoryRequest) {
+      @Parameter(description = "ID категории", example = "1") @PathVariable Long id,
+      @Valid @RequestBody UpdateCategoryRequest updateCategoryRequest) {
     return categoryService.update(id, updateCategoryRequest);
   }
 
-  @ResponseStatus(HttpStatus.NO_CONTENT)
   @DeleteMapping("/{id}")
-  @Operation(summary = "Delete category by id")
-  public void deleteCategory(@PathVariable Long id) {
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @Operation(
+      summary = "Удалить категорию по ID",
+      description = "Удаляет категорию по её уникальному идентификатору.")
+  public void deleteCategory(
+      @Parameter(description = "ID категории", example = "1") @PathVariable Long id) {
     categoryService.deleteById(id);
   }
 }

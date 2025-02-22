@@ -1,6 +1,7 @@
 package ru.nskopt.controllers;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -24,55 +25,65 @@ import ru.nskopt.services.ProductService;
 @RequestMapping(value = "/api/products")
 @RequiredArgsConstructor
 @Validated
-@Tag(name = "Product controller")
+@Tag(name = "Product Controller", description = "Управление товарами")
 public class ProductController {
 
   private final ProductService productService;
 
   @GetMapping
-  @Operation(summary = "Get all products")
+  @Operation(
+      summary = "Получить все товары",
+      description = "Возвращает список всех доступных товаров.")
   public List<Product> getAllProducts() {
     return productService.findAll();
   }
 
   @GetMapping("/{id}")
-  @Operation(summary = "Get product by id")
-  public Product getProductById(@PathVariable Long id) {
+  @Operation(
+      summary = "Получить товар по ID",
+      description = "Возвращает товар по его уникальному идентификатору.")
+  public Product getProductById(
+      @Parameter(description = "ID товара", example = "1") @PathVariable Long id) {
     return productService.findById(id);
   }
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
-  @Operation(summary = "Create product")
+  @Operation(
+      summary = "Создать новый товар",
+      description = "Создаёт новый товар на основе переданных данных.")
   public Product createProduct(@Valid @RequestBody UpdateProductRequest updateProductRequest) {
     return productService.save(updateProductRequest);
   }
 
   @PutMapping("/{id}")
-  @Operation(summary = "Update product by id")
+  @Operation(
+      summary = "Обновить товар по ID",
+      description = "Обновляет данные товара по его уникальному идентификатору.")
   public Product updateProduct(
-      @PathVariable Long id, @Valid @RequestBody UpdateProductRequest updateProductRequest) {
+      @Parameter(description = "ID товара", example = "1") @PathVariable Long id,
+      @Valid @RequestBody UpdateProductRequest updateProductRequest) {
     return productService.update(id, updateProductRequest);
   }
 
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  @Operation(summary = "Delete product by id")
-  public void deleteProduct(@PathVariable Long id) {
+  @Operation(
+      summary = "Удалить товар по ID",
+      description = "Удаляет товар по его уникальному идентификатору.")
+  public void deleteProduct(
+      @Parameter(description = "ID товара", example = "1") @PathVariable Long id) {
     productService.deleteById(id);
   }
 
-  @PostMapping("/{productId}/categories/{categoryId}")
+  @PutMapping("/{productId}/categories")
   @ResponseStatus(HttpStatus.OK)
-  @Operation(summary = "Add category to product by id")
-  public void addCategory(@PathVariable Long productId, @PathVariable Long categoryId) {
-    productService.addCategory(productId, categoryId);
-  }
-
-  @DeleteMapping("/{productId}/categories/{categoryId}")
-  @ResponseStatus(HttpStatus.NO_CONTENT)
-  @Operation(summary = "Remove category to product by id")
-  public void removeCategory(@PathVariable Long productId, @PathVariable Long categoryId) {
-    productService.removeCategory(productId, categoryId);
+  @Operation(
+      summary = "Обновить категории для товара",
+      description = "Обновляет список категорий для товара по его уникальному идентификатору.")
+  public void updateCategories(
+      @Parameter(description = "ID товара", example = "1") @PathVariable Long productId,
+      @RequestBody List<Long> categoryIds) {
+    productService.updateCategories(productId, categoryIds);
   }
 }

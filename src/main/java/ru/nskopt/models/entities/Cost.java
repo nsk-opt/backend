@@ -15,10 +15,10 @@ import lombok.NoArgsConstructor;
 @Embeddable
 public class Cost {
   @PositiveOrZero(message = "Wholesale cost must be positive or zero")
-  @Schema(description = "Wholesale cost in rubles", example = "1347")
+  @Schema(description = "Оптовая стоимость в рублях", example = "1347")
   private BigDecimal wholesalePrice;
 
   @Positive(message = "Retail cost must be positive")
-  @Schema(description = "Retail cost in rubles", example = "4296")
+  @Schema(description = "Розничная стоимость в рублях", example = "4296")
   private BigDecimal retailPrice;
 }

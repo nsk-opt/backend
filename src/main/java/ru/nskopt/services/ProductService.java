@@ -1,6 +1,7 @@
 package ru.nskopt.services;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,7 +31,6 @@ public class ProductService {
 
   public Product save(UpdateProductRequest updateProductRequest) {
     log.info("Save {}", updateProductRequest);
-
     return productRepository.save(productMapper.map(updateProductRequest));
   }
 
@@ -40,42 +40,31 @@ public class ProductService {
         .map(
             existingProduct -> {
               productMapper.update(existingProduct, updateProductRequest);
-
               log.info("Updating product with ID {}: {}", id, existingProduct);
-
-              Product updatedProduct = productRepository.save(existingProduct);
-
-              log.info("Product updated successfully: {}", updatedProduct);
-
-              return updatedProduct;
+              return productRepository.save(existingProduct);
             })
         .orElseThrow(() -> new ResourceNotFoundException(id));
   }
 
   public void deleteById(Long id) {
     if (!productRepository.existsById(id)) throw new ResourceNotFoundException(id);
-
     log.info("Delete product with id {}", id);
-
     productRepository.deleteById(id);
   }
 
-  public void addCategory(Long productId, Long categoryId) {
-    Product product = findById(productId);
-    Category category = categoryService.findById(categoryId);
-
-    product.getCategories().add(category);
-    productRepository.save(product);
-
-    log.info("Add {} to {}", category, product);
-  }
-
-  public void removeCategory(Long productId, Long categoryId) {
+  public void updateCategories(Long productId, List<Long> categoryIds) {
     Product product = findById(productId);
 
-    product.getCategories().removeIf(category -> category.getId().equals(categoryId));
+    product.getCategories().clear();
+
+    if (categoryIds.isEmpty()) log.info("Removed all categories for product ID {}", productId);
+
+    List<Category> categories =
+        categoryIds.stream().map(categoryService::findById).collect(Collectors.toList());
+
+    product.getCategories().addAll(categories);
     productRepository.save(product);
 
-    log.info("Remove category with id {} from {}", categoryId, productId);
+    log.info("Updated categories for product ID {}: {}", productId, categoryIds);
   }
 }
