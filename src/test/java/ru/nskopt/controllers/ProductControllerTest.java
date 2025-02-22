@@ -9,6 +9,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.List;
@@ -22,7 +24,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.transaction.annotation.Transactional;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import ru.nskopt.App;
 import ru.nskopt.models.dtos.ImageDto;
 import ru.nskopt.models.entities.Category;
@@ -633,8 +634,7 @@ class ProductControllerTest {
             put("/api/products/" + product.getId() + "/categories")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
-                    objectMapper.writeValueAsString(
-                        List.of(category1.getId(), category3.getId()))))
+                    objectMapper.writeValueAsString(List.of(category1.getId(), category3.getId()))))
         .andExpect(status().isOk());
 
     Product updatedProduct =
@@ -657,9 +657,9 @@ class ProductControllerTest {
             new BigDecimal("100.00"),
             new BigDecimal("150.00"));
 
-            Category category = new Category();
-            category.setName("Category 1");
-            categoryRepository.save(category);
+    Category category = new Category();
+    category.setName("Category 1");
+    categoryRepository.save(category);
 
     product.getCategories().add(category);
     productRepository.save(product);
@@ -668,9 +668,7 @@ class ProductControllerTest {
         .perform(
             put("/api/products/" + product.getId() + "/categories")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    objectMapper.writeValueAsString(
-                        List.of())))
+                .content(objectMapper.writeValueAsString(List.of())))
         .andExpect(status().isOk());
 
     Product updatedProduct =
