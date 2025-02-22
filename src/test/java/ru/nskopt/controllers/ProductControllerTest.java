@@ -1,15 +1,17 @@
 package ru.nskopt.controllers;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,11 +21,15 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
+import org.springframework.transaction.annotation.Transactional;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import ru.nskopt.App;
 import ru.nskopt.models.dtos.ImageDto;
+import ru.nskopt.models.entities.Category;
 import ru.nskopt.models.entities.Cost;
 import ru.nskopt.models.entities.Product;
 import ru.nskopt.models.requests.UpdateProductRequest;
+import ru.nskopt.repositories.CategoryRepository;
 import ru.nskopt.repositories.ProductRepository;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, classes = App.class)
@@ -33,6 +39,7 @@ class ProductControllerTest {
   @Autowired private MockMvc mockMvc;
 
   @Autowired private ProductRepository productRepository;
+  @Autowired private CategoryRepository categoryRepository;
 
   @Autowired private ObjectMapper objectMapper;
 
@@ -404,7 +411,7 @@ class ProductControllerTest {
   }
 
   @Test
-  void updateProduct_successful_4() throws Exception {
+  void updateProduct_successful_3() throws Exception {
     Product product =
         createProduct(
             "pants gucci",
@@ -551,5 +558,261 @@ class ProductControllerTest {
   @Test
   void deleteProduct_notFound() throws Exception {
     expectNotFoundProductDeletion(444L);
+  }
+
+  @Test
+  @Transactional
+  void updateCategories_successful() throws Exception {
+    Product product =
+        createProduct(
+            "Test Product",
+            10,
+            "Test Description",
+            new BigDecimal("100.00"),
+            new BigDecimal("150.00"));
+
+    Category category1 = new Category();
+    category1.setName("Category 1");
+    categoryRepository.save(category1);
+
+    Category category2 = new Category();
+    category2.setName("Category 2");
+    categoryRepository.save(category2);
+
+    Category category3 = new Category();
+    category3.setName("Category 3");
+    categoryRepository.save(category3);
+
+    mockMvc
+        .perform(
+            put("/api/products/" + product.getId() + "/categories")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    objectMapper.writeValueAsString(
+                        List.of(category1.getId(), category2.getId(), category3.getId()))))
+        .andExpect(status().isOk());
+
+    Product updatedProduct =
+        productRepository.findById(product.getId()).orElseThrow(Exception::new);
+    Set<Category> categories = updatedProduct.getCategories();
+
+    assertTrue(categories.contains(category1));
+    assertTrue(categories.contains(category2));
+    assertTrue(categories.contains(category3));
+    assertEquals(3, categories.size());
+  }
+
+  @Test
+  @Transactional
+  void updateCategories_successful_1() throws Exception {
+    Product product =
+        createProduct(
+            "Test Product",
+            10,
+            "Test Description",
+            new BigDecimal("100.00"),
+            new BigDecimal("150.00"));
+
+    Category category1 = new Category();
+    category1.setName("Category 1");
+    categoryRepository.save(category1);
+
+    Category category2 = new Category();
+    category2.setName("Category 2");
+    categoryRepository.save(category2);
+
+    Category category3 = new Category();
+    category3.setName("Category 3");
+    categoryRepository.save(category3);
+
+    product.getCategories().addAll(List.of(category1, category2, category3));
+    productRepository.save(product);
+
+    mockMvc
+        .perform(
+            put("/api/products/" + product.getId() + "/categories")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    objectMapper.writeValueAsString(
+                        List.of(category1.getId(), category3.getId()))))
+        .andExpect(status().isOk());
+
+    Product updatedProduct =
+        productRepository.findById(product.getId()).orElseThrow(Exception::new);
+    Set<Category> categories = updatedProduct.getCategories();
+
+    assertTrue(categories.contains(category1));
+    assertTrue(categories.contains(category3));
+    assertEquals(2, categories.size());
+  }
+
+  @Test
+  @Transactional
+  void updateCategories_delete_all() throws Exception {
+    Product product =
+        createProduct(
+            "Test Product",
+            10,
+            "Test Description",
+            new BigDecimal("100.00"),
+            new BigDecimal("150.00"));
+
+            Category category = new Category();
+            category.setName("Category 1");
+            categoryRepository.save(category);
+
+    product.getCategories().add(category);
+    productRepository.save(product);
+
+    mockMvc
+        .perform(
+            put("/api/products/" + product.getId() + "/categories")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    objectMapper.writeValueAsString(
+                        List.of())))
+        .andExpect(status().isOk());
+
+    Product updatedProduct =
+        productRepository.findById(product.getId()).orElseThrow(Exception::new);
+    Set<Category> categories = updatedProduct.getCategories();
+
+    assertTrue(categories.isEmpty());
+  }
+
+  @Test
+  @Transactional
+  void updateCategories_emptyCategories() throws Exception {
+    Product product =
+        createProduct(
+            "Test Product",
+            10,
+            "Test Description",
+            new BigDecimal("100.00"),
+            new BigDecimal("150.00"));
+
+    mockMvc
+        .perform(
+            put("/api/products/" + product.getId() + "/categories")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(List.of())))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  void updateCategories_productNotFound() throws Exception {
+    mockMvc
+        .perform(
+            put("/api/products/999/categories")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(List.of(1L, 2L, 3L))))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void createProduct_verification_emptyName() throws Exception {
+    UpdateProductRequest request =
+        createRequest(
+            "", // Пустое имя
+            5,
+            "New Description",
+            new BigDecimal("200.00"),
+            new BigDecimal("300.00"),
+            Set.of(new ImageDto("https://imgur.com/image")));
+
+    expectCreateBadRequest(request);
+  }
+
+  @Test
+  void createProduct_verification_negativeAvailability() throws Exception {
+    UpdateProductRequest request =
+        createRequest(
+            "New Product",
+            -5, // Отрицательное значение
+            "New Description",
+            new BigDecimal("200.00"),
+            new BigDecimal("300.00"),
+            Set.of(new ImageDto("https://imgur.com/image")));
+
+    expectCreateBadRequest(request);
+  }
+
+  @Test
+  void createProduct_verification_noImages() throws Exception {
+    UpdateProductRequest request =
+        createRequest(
+            "New Product",
+            5,
+            "New Description",
+            new BigDecimal("200.00"),
+            new BigDecimal("300.00"),
+            new HashSet<>() // Пустой список изображений
+            );
+
+    expectCreateBadRequest(request);
+  }
+
+  @Test
+  void getProductById_checkAllFields() throws Exception {
+    Product product =
+        createProduct(
+            "Test Product",
+            10,
+            "Test Description",
+            new BigDecimal("100.00"),
+            new BigDecimal("150.00"));
+
+    mockMvc
+        .perform(get("/api/products/" + product.getId()).contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value(product.getId()))
+        .andExpect(jsonPath("$.name").value(product.getName()))
+        .andExpect(jsonPath("$.availability").value(product.getAvailability()))
+        .andExpect(jsonPath("$.description").value(product.getDescription()))
+        .andExpect(jsonPath("$.cost.wholesalePrice").value(100.0))
+        .andExpect(jsonPath("$.cost.retailPrice").value(150.0))
+        .andExpect(jsonPath("$.images").isArray());
+  }
+
+  @Test
+  void getAllProducts_checkAllFields() throws Exception {
+    Product product1 =
+        createProduct(
+            "Product 1", 10, "Description 1", new BigDecimal("100.00"), new BigDecimal("150.00"));
+
+    Product product2 =
+        createProduct(
+            "Product 2", 20, "Description 2", new BigDecimal("200.00"), new BigDecimal("250.00"));
+
+    mockMvc
+        .perform(get("/api/products").contentType(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].id").value(product1.getId()))
+        .andExpect(jsonPath("$[0].name").value(product1.getName()))
+        .andExpect(jsonPath("$[0].availability").value(product1.getAvailability()))
+        .andExpect(jsonPath("$[0].description").value(product1.getDescription()))
+        .andExpect(jsonPath("$[0].cost.wholesalePrice").value(100.0))
+        .andExpect(jsonPath("$[0].cost.retailPrice").value(150.0))
+        .andExpect(jsonPath("$[1].id").value(product2.getId()))
+        .andExpect(jsonPath("$[1].name").value(product2.getName()))
+        .andExpect(jsonPath("$[1].availability").value(product2.getAvailability()))
+        .andExpect(jsonPath("$[1].description").value(product2.getDescription()))
+        .andExpect(jsonPath("$[1].cost.wholesalePrice").value(200.0))
+        .andExpect(jsonPath("$[1].cost.retailPrice").value(250.0));
+  }
+
+  @Test
+  void deleteProduct_checkDatabase() throws Exception {
+    Product product =
+        createProduct(
+            "Test Product",
+            10,
+            "Test Description",
+            new BigDecimal("100.00"),
+            new BigDecimal("150.00"));
+
+    mockMvc.perform(delete("/api/products/" + product.getId())).andExpect(status().isNoContent());
+
+    assertFalse(productRepository.existsById(product.getId()));
   }
 }
