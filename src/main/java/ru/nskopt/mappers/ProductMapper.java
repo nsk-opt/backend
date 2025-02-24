@@ -1,6 +1,5 @@
 package ru.nskopt.mappers;
 
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -11,7 +10,6 @@ import ru.nskopt.models.requests.UpdateProductRequest;
 @RequiredArgsConstructor
 @Slf4j
 public class ProductMapper implements Mapper<Product, UpdateProductRequest> {
-  private final ImageMapper imageMapper;
 
   @Override
   public Product map(UpdateProductRequest value) {
@@ -32,13 +30,5 @@ public class ProductMapper implements Mapper<Product, UpdateProductRequest> {
 
     product.setDescription(updateProductRequest.getDescription());
     product.setName(updateProductRequest.getName());
-
-    product.getImages().clear();
-    product
-        .getImages()
-        .addAll(
-            updateProductRequest.getImages().stream()
-                .map(imageMapper::map)
-                .collect(Collectors.toSet()));
   }
 }

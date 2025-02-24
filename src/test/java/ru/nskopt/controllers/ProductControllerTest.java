@@ -12,7 +12,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +24,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.transaction.annotation.Transactional;
 import ru.nskopt.App;
-import ru.nskopt.models.dtos.ImageDto;
 import ru.nskopt.models.entities.Category;
 import ru.nskopt.models.entities.Cost;
 import ru.nskopt.models.entities.Product;
@@ -62,8 +60,8 @@ class ProductControllerTest {
     product.setAvailability(availability);
     product.setDescription(description);
     product.setCost(new Cost(wholesalePrice, retailPrice));
-    product.setImages(new HashSet<>());
-    product.setCategories(new HashSet<>());
+    // product.setImages(new HashSet<>());
+    // product.setCategories(new HashSet<>());
 
     return productRepository.save(product);
   }
@@ -73,8 +71,7 @@ class ProductControllerTest {
       int availability,
       String description,
       BigDecimal wholesalePrice,
-      BigDecimal retailPrice,
-      Set<ImageDto> images) {
+      BigDecimal retailPrice) {
 
     UpdateProductRequest request = new UpdateProductRequest();
 
@@ -82,7 +79,6 @@ class ProductControllerTest {
     request.setAvailability(availability);
     request.setDescription(description);
     request.setCost(new Cost(wholesalePrice, retailPrice));
-    request.setImages(images);
 
     return request;
   }
@@ -107,19 +103,7 @@ class ProductControllerTest {
             jsonPath("$.cost.wholesalePrice")
                 .value(request.getCost().getWholesalePrice().doubleValue()))
         .andExpect(
-            jsonPath("$.cost.retailPrice").value(request.getCost().getRetailPrice().doubleValue()))
-
-        // images
-        .andExpect(jsonPath("$.images").isArray())
-        .andExpect(jsonPath("$.images.length()").value(request.getImages().size()))
-        .andExpect(
-            result -> {
-              int i = 0;
-              for (ImageDto image : request.getImages()) {
-                jsonPath("$.images[" + i + "].link").value(image.getLink()).match(result);
-                i++;
-              }
-            });
+            jsonPath("$.cost.retailPrice").value(request.getCost().getRetailPrice().doubleValue()));
   }
 
   private void expectUpdatedProduct(Long id, UpdateProductRequest request) throws Exception {
@@ -141,19 +125,7 @@ class ProductControllerTest {
             jsonPath("$.cost.wholesalePrice")
                 .value(request.getCost().getWholesalePrice().doubleValue()))
         .andExpect(
-            jsonPath("$.cost.retailPrice").value(request.getCost().getRetailPrice().doubleValue()))
-
-        // images
-        .andExpect(jsonPath("$.images").isArray())
-        .andExpect(jsonPath("$.images.length()").value(request.getImages().size()))
-        .andExpect(
-            result -> {
-              int i = 0;
-              for (ImageDto image : request.getImages()) {
-                jsonPath("$.images[" + i + "].link").value(image.getLink()).match(result);
-                i++;
-              }
-            });
+            jsonPath("$.cost.retailPrice").value(request.getCost().getRetailPrice().doubleValue()));
   }
 
   private void expectSuccessfulProductDeletion(Long id) throws Exception {
@@ -249,8 +221,7 @@ class ProductControllerTest {
             5,
             "New Description",
             new BigDecimal("200.00"),
-            new BigDecimal("300.00"),
-            Set.of(new ImageDto("https://imgur.com/image")));
+            new BigDecimal("300.00"));
 
     expectCreatedProduct(request, status().isCreated());
   }
@@ -263,8 +234,7 @@ class ProductControllerTest {
             5,
             "New Description",
             new BigDecimal("0.00"),
-            new BigDecimal("777372.00"),
-            Set.of(new ImageDto("https://imgur.com/image")));
+            new BigDecimal("777372.00"));
 
     expectCreatedProduct(request, status().isCreated());
   }
@@ -277,8 +247,7 @@ class ProductControllerTest {
             5,
             "New Description",
             new BigDecimal("-200.00"),
-            new BigDecimal("137.00"),
-            new HashSet<>());
+            new BigDecimal("137.00"));
 
     expectCreateBadRequest(request);
   }
@@ -291,8 +260,7 @@ class ProductControllerTest {
             5,
             "New Description",
             new BigDecimal("137.00"),
-            new BigDecimal("-300.00"),
-            new HashSet<>());
+            new BigDecimal("-300.00"));
 
     expectCreateBadRequest(request);
   }
@@ -301,56 +269,9 @@ class ProductControllerTest {
   void createProduct_verification_zero_wholesale_price() throws Exception {
     UpdateProductRequest request =
         createRequest(
-            "New Product",
-            5,
-            "New Description",
-            new BigDecimal("0.00"),
-            new BigDecimal("300.00"),
-            Set.of(new ImageDto("https://imgur.com/image")));
+            "New Product", 5, "New Description", new BigDecimal("0.00"), new BigDecimal("300.00"));
 
     expectCreatedProduct(request, status().isCreated());
-  }
-
-  @Test
-  void createProduct_verification_invalid_image_1() throws Exception {
-    UpdateProductRequest request =
-        createRequest(
-            "New Product",
-            5,
-            "New Description",
-            new BigDecimal("0.00"),
-            new BigDecimal("300.00"),
-            Set.of(new ImageDto("sftp://imgur.com/image")));
-
-    expectCreateBadRequest(request);
-  }
-
-  @Test
-  void createProduct_verification_invalid_image_2() throws Exception {
-    UpdateProductRequest request =
-        createRequest(
-            "New Product",
-            5,
-            "New Description",
-            new BigDecimal("0.00"),
-            new BigDecimal("300.00"),
-            Set.of(new ImageDto("imgur/image")));
-
-    expectCreateBadRequest(request);
-  }
-
-  @Test
-  void createProduct_verification_invalid_image_3() throws Exception {
-    UpdateProductRequest request =
-        createRequest(
-            "New Product",
-            5,
-            "New Description",
-            new BigDecimal("0.00"),
-            new BigDecimal("300.00"),
-            Set.of(new ImageDto("http://imgur.com/image")));
-
-    expectCreateBadRequest(request);
   }
 
   @Test
@@ -361,8 +282,7 @@ class ProductControllerTest {
             5,
             "New Description",
             new BigDecimal("0.00"),
-            new BigDecimal("300.00"),
-            Set.of(new ImageDto("https://imgur.com/image")));
+            new BigDecimal("300.00"));
 
     expectUpdateBadRequest(1L, request, status().isNotFound());
   }
@@ -383,8 +303,7 @@ class ProductControllerTest {
             5,
             "New Description",
             new BigDecimal("0.00"),
-            new BigDecimal("30.00"),
-            Set.of(new ImageDto("https://imgur.com/image")));
+            new BigDecimal("30.00"));
 
     expectUpdatedProduct(product.getId(), request);
   }
@@ -405,8 +324,7 @@ class ProductControllerTest {
             4,
             "New Description",
             new BigDecimal("154.00"),
-            new BigDecimal("30.00"),
-            Set.of(new ImageDto("https://imgur.com/image")));
+            new BigDecimal("30.00"));
 
     expectUpdatedProduct(product.getId(), request);
   }
@@ -427,8 +345,7 @@ class ProductControllerTest {
             4,
             "New Description",
             new BigDecimal("154.00"),
-            new BigDecimal("30.00"),
-            Set.of(new ImageDto("https://imgur.com/image")));
+            new BigDecimal("30.00"));
 
     expectUpdatedProduct(product.getId(), request);
   }
@@ -449,8 +366,7 @@ class ProductControllerTest {
             5,
             "New Description",
             new BigDecimal("0.00"),
-            new BigDecimal("30.00"),
-            Set.of(new ImageDto("https://imgur.com/image")));
+            new BigDecimal("30.00"));
 
     expectUpdateBadRequest(product.getId(), request);
   }
@@ -471,8 +387,7 @@ class ProductControllerTest {
             5,
             "New Description",
             new BigDecimal("-30.00"),
-            new BigDecimal("30.00"),
-            Set.of(new ImageDto("https://imgur.com/image")));
+            new BigDecimal("30.00"));
 
     expectUpdateBadRequest(product.getId(), request);
   }
@@ -493,8 +408,7 @@ class ProductControllerTest {
             5,
             "New Description",
             new BigDecimal("-30.00"),
-            new BigDecimal("-30.00"),
-            Set.of(new ImageDto("https://imgur.com/image")));
+            new BigDecimal("-30.00"));
 
     expectUpdateBadRequest(product.getId(), request);
   }
@@ -515,30 +429,7 @@ class ProductControllerTest {
             5,
             "New Description",
             new BigDecimal("30.00"),
-            new BigDecimal("-30.00"),
-            Set.of(new ImageDto("https://imgur.com/image")));
-
-    expectUpdateBadRequest(product.getId(), request);
-  }
-
-  @Test
-  void updateProduct_verification_invalid_image() throws Exception {
-    Product product =
-        createProduct(
-            "Test Product",
-            10,
-            "Test Description",
-            new BigDecimal("100.00"),
-            new BigDecimal("150.00"));
-
-    UpdateProductRequest request =
-        createRequest(
-            "UPDATE PRODUCT TOO LONG NAME..",
-            5,
-            "New Description",
-            new BigDecimal("30.00"),
-            new BigDecimal("-30.00"),
-            Set.of(new ImageDto("http://imgur.com/image")));
+            new BigDecimal("-30.00"));
 
     expectUpdateBadRequest(product.getId(), request);
   }
@@ -710,13 +601,7 @@ class ProductControllerTest {
   @Test
   void createProduct_verification_emptyName() throws Exception {
     UpdateProductRequest request =
-        createRequest(
-            "", // Пустое имя
-            5,
-            "New Description",
-            new BigDecimal("200.00"),
-            new BigDecimal("300.00"),
-            Set.of(new ImageDto("https://imgur.com/image")));
+        createRequest("", 5, "New Description", new BigDecimal("200.00"), new BigDecimal("300.00"));
 
     expectCreateBadRequest(request);
   }
@@ -726,26 +611,10 @@ class ProductControllerTest {
     UpdateProductRequest request =
         createRequest(
             "New Product",
-            -5, // Отрицательное значение
+            -5,
             "New Description",
             new BigDecimal("200.00"),
-            new BigDecimal("300.00"),
-            Set.of(new ImageDto("https://imgur.com/image")));
-
-    expectCreateBadRequest(request);
-  }
-
-  @Test
-  void createProduct_verification_noImages() throws Exception {
-    UpdateProductRequest request =
-        createRequest(
-            "New Product",
-            5,
-            "New Description",
-            new BigDecimal("200.00"),
-            new BigDecimal("300.00"),
-            new HashSet<>() // Пустой список изображений
-            );
+            new BigDecimal("300.00"));
 
     expectCreateBadRequest(request);
   }
@@ -768,8 +637,7 @@ class ProductControllerTest {
         .andExpect(jsonPath("$.availability").value(product.getAvailability()))
         .andExpect(jsonPath("$.description").value(product.getDescription()))
         .andExpect(jsonPath("$.cost.wholesalePrice").value(100.0))
-        .andExpect(jsonPath("$.cost.retailPrice").value(150.0))
-        .andExpect(jsonPath("$.images").isArray());
+        .andExpect(jsonPath("$.cost.retailPrice").value(150.0));
   }
 
   @Test

@@ -6,9 +6,11 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.nskopt.exceptions.ResourceNotFoundException;
 import ru.nskopt.mappers.Mapper;
 import ru.nskopt.models.entities.Category;
+import ru.nskopt.models.entities.Image;
 import ru.nskopt.models.entities.Product;
 import ru.nskopt.models.requests.UpdateProductRequest;
 import ru.nskopt.repositories.ProductRepository;
@@ -19,6 +21,7 @@ import ru.nskopt.repositories.ProductRepository;
 public class ProductService {
 
   private final ProductRepository productRepository;
+  private final ImageService imageService;
   private final Mapper<Product, UpdateProductRequest> productMapper;
   private final CategoryService categoryService;
 
@@ -67,5 +70,26 @@ public class ProductService {
     productRepository.save(product);
 
     log.info("Updated categories for product ID {}: {}", productId, categoryIds);
+  }
+
+  @Transactional
+  public void updateImages(Long productId, List<Long> imageIds) {
+    Product product = findById(productId);
+
+    product.getImages().clear();
+
+    List<Image> images = imageService.getImagesByIds(imageIds);
+
+    product.getImages().addAll(images);
+
+    productRepository.save(product);
+    log.info("Updated images for product ID {}: {}", productId, imageIds);
+  }
+
+  @Transactional
+  public List<Long> getImagesIds(Long productId) {
+    Product product = findById(productId);
+
+    return product.getImages().stream().map(Image::getId).toList();
   }
 }

@@ -23,6 +23,8 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-data-jpa")
   implementation("org.springframework.boot:spring-boot-starter-validation")
   implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.4")
+  implementation("net.coobird:thumbnailator:0.4.20")
+  implementation("org.sejda.imageio:webp-imageio:0.1.6")
 
   runtimeOnly("org.postgresql:postgresql")
 

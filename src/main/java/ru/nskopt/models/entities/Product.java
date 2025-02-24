@@ -40,8 +40,9 @@ public class Product {
 
   private String description;
 
-  @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-  @JoinColumn(name = "product_id")
+  @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+  @JoinColumn(name = "pro_images_ids")
+  @JsonIgnore
   @EqualsAndHashCode.Exclude
   private Set<Image> images = new HashSet<>();
 

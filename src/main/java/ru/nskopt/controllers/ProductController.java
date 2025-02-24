@@ -86,4 +86,24 @@ public class ProductController {
       @RequestBody List<Long> categoryIds) {
     productService.updateCategories(productId, categoryIds);
   }
+
+  @PutMapping("/{productId}/images")
+  @ResponseStatus(HttpStatus.OK)
+  @Operation(
+      summary = "Обновить изображения товара",
+      description = "Обновляет список изображений для товара по его уникальному идентификатору.")
+  public void updateImages(
+      @Parameter(description = "ID товара", example = "1") @PathVariable Long productId,
+      @RequestBody List<Long> imageIds) {
+    productService.updateImages(productId, imageIds);
+  }
+
+  @GetMapping("/{productId}/images")
+  @Operation(
+      summary = "Получить ID изображений товара",
+      description = "Возвращает список ID изображений, связанных с товаром.")
+  public List<Long> getImagesIds(
+      @Parameter(description = "ID товара", example = "1") @PathVariable Long productId) {
+    return productService.getImagesIds(productId);
+  }
 }

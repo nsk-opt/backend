@@ -4,9 +4,11 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.nskopt.exceptions.ResourceNotFoundException;
 import ru.nskopt.mappers.Mapper;
 import ru.nskopt.models.entities.Category;
+import ru.nskopt.models.entities.Image;
 import ru.nskopt.models.requests.UpdateCategoryRequest;
 import ru.nskopt.repositories.CategoryRepository;
 
@@ -16,6 +18,7 @@ import ru.nskopt.repositories.CategoryRepository;
 public class CategoryService {
 
   private final CategoryRepository categoryRepository;
+  private final ImageService imageService;
   private final Mapper<Category, UpdateCategoryRequest> categoryMapper;
 
   public List<Category> findAll() {
@@ -51,5 +54,26 @@ public class CategoryService {
 
     log.info("Delete category with id {}", id);
     categoryRepository.deleteById(id);
+  }
+
+  @Transactional
+  public void updateImages(Long categoryId, List<Long> imagesIds) {
+    Category category = findById(categoryId);
+
+    List<Image> images = imageService.getImagesByIds(imagesIds);
+
+    category.getImages().clear();
+    category.getImages().addAll(images);
+
+    categoryRepository.save(category);
+
+    log.info("Updated images for category ID {}: {}", categoryId, imagesIds);
+  }
+
+  @Transactional
+  public List<Long> getImagesIds(Long productId) {
+    Category category = findById(productId);
+
+    return category.getImages().stream().map(Image::getId).toList();
   }
 }

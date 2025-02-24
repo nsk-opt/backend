@@ -12,6 +12,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       SSL_KEY_PASSWORD: ${SSL_KEY_PASSWORD}
       SERVER_DOMAIN: ${SERVER_DOMAIN}
+      IMAGE_QUALITY: ${IMAGE_QUALITY}
 
     ports:
       - "8443:8443"
@@ -61,6 +62,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       SSL_KEY_PASSWORD: ${SSL_KEY_PASSWORD}
       SERVER_DOMAIN: ${SERVER_DOMAIN}
+      IMAGE_QUALITY: ${IMAGE_QUALITY}
 
     volumes:
       - ./reports:/app/build/reports

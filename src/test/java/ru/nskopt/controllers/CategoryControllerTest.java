@@ -21,9 +21,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.nskopt.App;
 import ru.nskopt.mappers.CategoryMapper;
-import ru.nskopt.models.dtos.ImageDto;
 import ru.nskopt.models.entities.Category;
-import ru.nskopt.models.entities.Image;
 import ru.nskopt.models.requests.UpdateCategoryRequest;
 import ru.nskopt.repositories.CategoryRepository;
 
@@ -46,7 +44,6 @@ class CategoryControllerTest {
 
     existsCategory = new Category();
     existsCategory.setName("Pants");
-    existsCategory.setImage(new Image(null, "https://imgur.com/testImage"));
 
     repository.save(existsCategory);
   }
@@ -62,18 +59,9 @@ class CategoryControllerTest {
     Long id = jsonNode.get("id").asLong();
     String name = jsonNode.get("name").asText();
 
-    JsonNode imageNode = jsonNode.get("image");
-    Image image = null;
-    if (imageNode != null) {
-      Long imageId = imageNode.get("id").asLong();
-      String imageLink = imageNode.get("link").asText();
-      image = new Image(imageId, imageLink);
-    }
-
     Category category = new Category();
     category.setId(id);
     category.setName(name);
-    category.setImage(image);
 
     return category;
   }
@@ -130,7 +118,6 @@ class CategoryControllerTest {
 
     UpdateCategoryRequest request = new UpdateCategoryRequest();
     request.setName("Pants");
-    request.setImage(new ImageDto("https://imgur.com/testImage"));
 
     Category sendCategory = categoryMapper.map(request);
 
@@ -147,7 +134,6 @@ class CategoryControllerTest {
 
     Category receiveCategory = getCategoryFromResponse(responseString);
     sendCategory.setId(receiveCategory.getId());
-    sendCategory.getImage().setId(receiveCategory.getImage().getId());
 
     assertTrue(receiveCategory.equals(sendCategory));
   }
@@ -158,7 +144,7 @@ class CategoryControllerTest {
 
     UpdateCategoryRequest request = new UpdateCategoryRequest();
     request.setName("Pan");
-    request.setImage(new ImageDto("https://imgur.com/testImage"));
+
     Category sendCategory = categoryMapper.map(request);
 
     String responseString =
@@ -174,7 +160,6 @@ class CategoryControllerTest {
 
     Category receiveCategory = getCategoryFromResponse(responseString);
     sendCategory.setId(receiveCategory.getId());
-    sendCategory.getImage().setId(receiveCategory.getImage().getId());
 
     assertTrue(receiveCategory.equals(sendCategory));
   }
@@ -185,7 +170,6 @@ class CategoryControllerTest {
 
     UpdateCategoryRequest request = new UpdateCategoryRequest();
     request.setName("Pangkjreodjtjed");
-    request.setImage(new ImageDto("https://imgur.com/testImage"));
 
     Category sendCategory = categoryMapper.map(request);
 
@@ -202,7 +186,6 @@ class CategoryControllerTest {
 
     Category receiveCategory = getCategoryFromResponse(responseString);
     sendCategory.setId(receiveCategory.getId());
-    sendCategory.getImage().setId(receiveCategory.getImage().getId());
 
     assertTrue(receiveCategory.equals(sendCategory));
   }
@@ -211,7 +194,6 @@ class CategoryControllerTest {
   void createCategory_nameTooShort() throws Exception {
     UpdateCategoryRequest request = new UpdateCategoryRequest();
     request.setName("Pa");
-    request.setImage(new ImageDto("https://imgur.com/testImage"));
 
     mvc.perform(
             post("/api/categories")
@@ -226,7 +208,6 @@ class CategoryControllerTest {
   void createCategory_nameTooLong() throws Exception {
     UpdateCategoryRequest request = new UpdateCategoryRequest();
     request.setName("Pantsjh uhrwkdjre");
-    request.setImage(new ImageDto("https://imgur.com/testImage"));
 
     mvc.perform(
             post("/api/categories")
@@ -243,7 +224,6 @@ class CategoryControllerTest {
 
     UpdateCategoryRequest request = new UpdateCategoryRequest();
     request.setName("Pants");
-    request.setImage(new ImageDto("https://imgur.com/testImage"));
 
     Category sendCategory = categoryMapper.map(request);
 
@@ -260,7 +240,6 @@ class CategoryControllerTest {
 
     Category receiveCategory = getCategoryFromResponse(responseString);
     sendCategory.setId(receiveCategory.getId());
-    sendCategory.getImage().setId(receiveCategory.getImage().getId());
 
     assertTrue(receiveCategory.equals(sendCategory));
 
@@ -269,7 +248,6 @@ class CategoryControllerTest {
     //
 
     request.setName("Sweater");
-    request.setImage(new ImageDto("https://imgur.com/newImageLol"));
 
     sendCategory = categoryMapper.map(request);
 
@@ -286,7 +264,6 @@ class CategoryControllerTest {
 
     receiveCategory = getCategoryFromResponse(responseString);
     sendCategory.setId(receiveCategory.getId());
-    sendCategory.getImage().setId(receiveCategory.getImage().getId());
 
     assertTrue(receiveCategory.equals(sendCategory));
   }
@@ -297,7 +274,6 @@ class CategoryControllerTest {
 
     UpdateCategoryRequest request = new UpdateCategoryRequest();
     request.setName("Pants");
-    request.setImage(new ImageDto("https://imgur.com/testImage"));
 
     mvc.perform(
             put("/api/categories/999")

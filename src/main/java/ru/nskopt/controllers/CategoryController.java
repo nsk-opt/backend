@@ -75,4 +75,25 @@ public class CategoryController {
       @Parameter(description = "ID категории", example = "1") @PathVariable Long id) {
     categoryService.deleteById(id);
   }
+
+  @PutMapping("/{categoryId}/images")
+  @ResponseStatus(HttpStatus.OK)
+  @Operation(
+      summary = "Обновить изображения категории",
+      description = "Обновляет список изображений, связанных с категорией.")
+  public void updateImages(
+      @Parameter(description = "ID категории", example = "1") @PathVariable Long categoryId,
+      @RequestBody List<Long> imageIds) {
+    categoryService.updateImages(categoryId, imageIds);
+  }
+
+  @GetMapping("/{categoryId}/images")
+  @ResponseStatus(HttpStatus.OK)
+  @Operation(
+      summary = "Получить ID изображений категории",
+      description = "Возвращает список ID изображений, связанных с категорией.")
+  public List<Long> getImagesId(
+      @Parameter(description = "ID категории", example = "1") @PathVariable Long categoryId) {
+    return categoryService.getImagesIds(categoryId);
+  }
 }
