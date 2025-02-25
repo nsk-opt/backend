@@ -16,13 +16,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ImageData {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Lob
-    private byte[] data;
+  @Lob private byte[] data;
 
-    @OneToOne(mappedBy = "imageData")
-    private Image image;
+  @OneToOne(mappedBy = "imageData")
+  private Image image;
 }

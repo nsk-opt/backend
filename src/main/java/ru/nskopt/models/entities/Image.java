@@ -29,7 +29,7 @@ public class Image {
   private ImageData imageData;
 
   public byte[] getData() {
-    if (imageData == null) return new byte[]{};
+    if (imageData == null) return new byte[] {};
 
     return imageData.getData();
   }
