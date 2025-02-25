@@ -43,16 +43,11 @@ public class ImageService {
     return image;
   }
 
-  public void deleteImage(Long id) {
-    assertImageExistsById(id);
-    log.info("Delete image with ID {}", id);
-    imageRepository.deleteById(id);
-  }
-
   private byte[] compressImage(byte[] data) throws IOException {
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     Thumbnails.of(new ByteArrayInputStream(data))
-        .scale(1)
+        .size(1000, 1000)
+        .keepAspectRatio(false)
         .outputFormat("webp")
         .outputQuality(imageCompressionProperties.getQuality())
         .toOutputStream(outputStream);
