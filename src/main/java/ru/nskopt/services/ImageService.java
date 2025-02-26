@@ -6,12 +6,12 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import net.coobird.thumbnailator.Thumbnails;
 import ru.nskopt.exceptions.ResourceNotFoundException;
 import ru.nskopt.models.entities.Image;
 import ru.nskopt.properties.ImageCompressionProperties;
@@ -25,10 +25,6 @@ public class ImageService {
   private final ImageCompressionProperties imageCompressionProperties;
 
   private final ImageRepository imageRepository;
-
-  public void assertImageExistsById(Long id) {
-    if (!imageRepository.existsById(id)) throw new ResourceNotFoundException(id);
-  }
 
   public Image saveImage(MultipartFile file) throws IOException {
     Image image = new Image();
