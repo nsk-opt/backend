@@ -149,4 +149,11 @@ class ImageControllerTest {
 
     assertTrue(Arrays.equals(result, image.getData()));
   }
+
+  @Test
+  void getImage_not_found() throws Exception {
+    mockMvc
+        .perform(get("/api/images/" + 1).contentType("image/webp"))
+        .andExpect(status().isNotFound());
+  }
 }
