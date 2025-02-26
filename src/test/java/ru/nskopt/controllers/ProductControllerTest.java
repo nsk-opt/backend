@@ -26,9 +26,11 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.nskopt.App;
 import ru.nskopt.models.entities.Category;
 import ru.nskopt.models.entities.Cost;
+import ru.nskopt.models.entities.Image;
 import ru.nskopt.models.entities.Product;
 import ru.nskopt.models.requests.UpdateProductRequest;
 import ru.nskopt.repositories.CategoryRepository;
+import ru.nskopt.repositories.ImageRepository;
 import ru.nskopt.repositories.ProductRepository;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, classes = App.class)
@@ -39,6 +41,7 @@ class ProductControllerTest {
 
   @Autowired private ProductRepository productRepository;
   @Autowired private CategoryRepository categoryRepository;
+  @Autowired private ImageRepository imageRepository;
 
   @Autowired private ObjectMapper objectMapper;
 
@@ -678,5 +681,221 @@ class ProductControllerTest {
     mockMvc.perform(delete("/api/products/" + product.getId())).andExpect(status().isNoContent());
 
     assertFalse(productRepository.existsById(product.getId()));
+  }
+
+  @Test
+  @Transactional
+  void addImage_successful_one() throws Exception {
+    Image image = new Image();
+    image.setData("sample data".getBytes());
+    imageRepository.save(image);
+
+    Product product = new Product();
+    product.setName("test category");
+    product.setAvailability(30);
+    product.setDescription("sample description");
+    product.setCost(new Cost(BigDecimal.valueOf(130), BigDecimal.valueOf(2500)));
+    productRepository.save(product);
+
+    mockMvc
+        .perform(
+            put("/api/products/" + product.getId() + "/images")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(List.of(image.getId()))))
+        .andExpect(status().isOk());
+
+    assertEquals(1, product.getImages().size());
+  }
+
+  @Test
+  @Transactional
+  void addImage_successful_multiple() throws Exception {
+    Image image1 = new Image();
+    image1.setData("sample data first".getBytes());
+    imageRepository.save(image1);
+
+    Image image2 = new Image();
+    image2.setData("sample data second".getBytes());
+    imageRepository.save(image2);
+
+    Product product = new Product();
+    product.setName("test category");
+    product.setAvailability(30);
+    product.setDescription("sample description");
+    product.setCost(new Cost(BigDecimal.valueOf(130), BigDecimal.valueOf(2500)));
+    productRepository.save(product);
+
+    mockMvc
+        .perform(
+            put("/api/products/" + product.getId() + "/images")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(List.of(image1.getId(), image2.getId()))))
+        .andExpect(status().isOk());
+
+    assertEquals(2, product.getImages().size());
+  }
+
+  @Test
+  @Transactional
+  void addImage_not_exists_one() throws Exception {
+
+    Product product = new Product();
+    product.setName("test category");
+    product.setAvailability(30);
+    product.setDescription("sample description");
+    product.setCost(new Cost(BigDecimal.valueOf(130), BigDecimal.valueOf(2500)));
+    productRepository.save(product);
+
+    mockMvc
+        .perform(
+            put("/api/products/" + product.getId() + "/images")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(List.of(1))))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  @Transactional
+  void addImage_not_exists_one_and_one_exists() throws Exception {
+    Image image = new Image();
+    image.setData("sample image data".getBytes());
+
+    Product product = new Product();
+    product.setName("test category");
+    product.setAvailability(30);
+    product.setDescription("sample description");
+    product.setCost(new Cost(BigDecimal.valueOf(130), BigDecimal.valueOf(2500)));
+    product.getImages().add(image);
+    productRepository.save(product);
+
+    mockMvc
+        .perform(
+            put("/api/products/" + product.getId() + "/images")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(List.of(1, image.getId()))))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  @Transactional
+  void addImage_not_exists_multiple() throws Exception {
+
+    Product product = new Product();
+    product.setName("test category");
+    product.setAvailability(30);
+    product.setDescription("sample description");
+    product.setCost(new Cost(BigDecimal.valueOf(130), BigDecimal.valueOf(2500)));
+    productRepository.save(product);
+
+    mockMvc
+        .perform(
+            put("/api/products/" + product.getId() + "/images")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(List.of(1, 2, 3))))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  @Transactional
+  void getImages_successful_one() throws Exception {
+    Image image = new Image();
+    image.setData("sample data first".getBytes());
+    imageRepository.save(image);
+
+    Product product = new Product();
+    product.setName("test category");
+    product.setAvailability(30);
+    product.setDescription("sample description");
+    product.setCost(new Cost(BigDecimal.valueOf(130), BigDecimal.valueOf(2500)));
+    product.getImages().add(image);
+    productRepository.save(product);
+
+    String response =
+        mockMvc
+            .perform(get("/api/products/" + product.getId() + "/images"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    assertTrue(response.contains(String.valueOf(image.getId())));
+  }
+
+  @Test
+  @Transactional
+  void getImages_empty() throws Exception {
+    Product product = new Product();
+    product.setName("test category");
+    product.setAvailability(30);
+    product.setDescription("sample description");
+    product.setCost(new Cost(BigDecimal.valueOf(130), BigDecimal.valueOf(2500)));
+    productRepository.save(product);
+
+    mockMvc
+        .perform(get("/api/products/" + product.getId() + "/images"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(0));
+  }
+
+  @Test
+  @Transactional
+  void getImages_successful_multiple() throws Exception {
+    Image image1 = new Image();
+    image1.setData("sample data first".getBytes());
+    imageRepository.save(image1);
+
+    Image image2 = new Image();
+    image2.setData("sample data second".getBytes());
+    imageRepository.save(image2);
+
+    Product product = new Product();
+    product.setName("test category");
+    product.setAvailability(30);
+    product.setDescription("sample description");
+    product.setCost(new Cost(BigDecimal.valueOf(130), BigDecimal.valueOf(2500)));
+    product.getImages().add(image1);
+    product.getImages().add(image2);
+    productRepository.save(product);
+
+    String response =
+        mockMvc
+            .perform(get("/api/products/" + product.getId() + "/images"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    assertTrue(response.contains(String.valueOf(image1.getId())));
+    assertTrue(response.contains(String.valueOf(image2.getId())));
+  }
+
+  @Test
+  @Transactional
+  void deleteOrphanImage_successful() throws Exception {
+    Image image = new Image();
+    image.setData("sample data first".getBytes());
+    imageRepository.save(image);
+
+    Image orphanImage = new Image();
+    orphanImage.setData("sample data second".getBytes());
+    imageRepository.save(orphanImage);
+
+    Product product = new Product();
+    product.setName("test category");
+    product.setAvailability(30);
+    product.setDescription("sample description");
+    product.setCost(new Cost(BigDecimal.valueOf(130), BigDecimal.valueOf(2500)));
+    product.getImages().add(image);
+    product.getImages().add(orphanImage);
+    productRepository.save(product);
+
+    mockMvc
+        .perform(
+            put("/api/products/" + product.getId() + "/images")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(List.of(image.getId()))))
+        .andExpect(status().isOk());
+
+    assertFalse(imageRepository.existsById(orphanImage.getId()));
   }
 }

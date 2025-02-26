@@ -1,5 +1,7 @@
 package ru.nskopt.controllers;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -12,6 +14,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.transaction.Transactional;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,8 +26,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import ru.nskopt.App;
 import ru.nskopt.mappers.CategoryMapper;
 import ru.nskopt.models.entities.Category;
+import ru.nskopt.models.entities.Image;
 import ru.nskopt.models.requests.UpdateCategoryRequest;
 import ru.nskopt.repositories.CategoryRepository;
+import ru.nskopt.repositories.ImageRepository;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, classes = App.class)
 @AutoConfigureMockMvc
@@ -32,6 +38,8 @@ class CategoryControllerTest {
   @Autowired private MockMvc mvc;
 
   @Autowired private CategoryRepository repository;
+
+  @Autowired private ImageRepository imageRepository;
 
   private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -298,5 +306,185 @@ class CategoryControllerTest {
                 .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isNotFound())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON));
+  }
+
+  @Test
+  @Transactional
+  void addImage_successful_one() throws Exception {
+    Image image = new Image();
+    image.setData("sample data".getBytes());
+    imageRepository.save(image);
+
+    Category category = new Category();
+    category.setName("test category");
+    repository.save(category);
+
+    mvc.perform(
+            put("/api/categories/" + category.getId() + "/images")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(List.of(image.getId()))))
+        .andExpect(status().isOk());
+
+    assertEquals(1, category.getImages().size());
+  }
+
+  @Test
+  @Transactional
+  void addImage_successful_multiple() throws Exception {
+    Image image1 = new Image();
+    image1.setData("sample data first".getBytes());
+    imageRepository.save(image1);
+
+    Image image2 = new Image();
+    image2.setData("sample data second".getBytes());
+    imageRepository.save(image2);
+
+    Category category = new Category();
+    category.setName("test category");
+    repository.save(category);
+
+    mvc.perform(
+            put("/api/categories/" + category.getId() + "/images")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(List.of(image1.getId(), image2.getId()))))
+        .andExpect(status().isOk());
+
+    assertEquals(2, category.getImages().size());
+  }
+
+  @Test
+  @Transactional
+  void addImage_not_exists_one() throws Exception {
+
+    Category category = new Category();
+    category.setName("test category");
+    repository.save(category);
+
+    mvc.perform(
+            put("/api/categories/" + category.getId() + "/images")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(List.of(1))))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  @Transactional
+  void addImage_not_exists_one_and_one_exists() throws Exception {
+    Image image = new Image();
+    image.setData("sample image data".getBytes());
+
+    Category category = new Category();
+    category.setName("test category");
+    category.getImages().add(image);
+    repository.save(category);
+
+    mvc.perform(
+            put("/api/categories/" + category.getId() + "/images")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(List.of(1, image.getId()))))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  @Transactional
+  void addImage_not_exists_multiple() throws Exception {
+
+    Category category = new Category();
+    category.setName("test category");
+    repository.save(category);
+
+    mvc.perform(
+            put("/api/categories/" + category.getId() + "/images")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(List.of(1, 2, 3))))
+        .andExpect(status().isNotFound());
+  }
+
+  @Test
+  @Transactional
+  void getImages_successful_one() throws Exception {
+    Image image = new Image();
+    image.setData("sample data first".getBytes());
+    imageRepository.save(image);
+
+    Category category = new Category();
+    category.setName("test category");
+    category.getImages().add(image);
+    repository.save(category);
+
+    String response =
+        mvc.perform(get("/api/categories/" + category.getId() + "/images"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    assertTrue(response.contains(String.valueOf(image.getId())));
+  }
+
+  @Test
+  @Transactional
+  void getImages_empty() throws Exception {
+    Category category = new Category();
+    category.setName("test category");
+    repository.save(category);
+
+    mvc.perform(get("/api/categories/" + category.getId() + "/images"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(0));
+  }
+
+  @Test
+  @Transactional
+  void getImages_successful_multiple() throws Exception {
+    Image image1 = new Image();
+    image1.setData("sample data first".getBytes());
+    imageRepository.save(image1);
+
+    Image image2 = new Image();
+    image2.setData("sample data second".getBytes());
+    imageRepository.save(image2);
+
+    Category category = new Category();
+    category.setName("test category");
+    category.getImages().add(image1);
+    category.getImages().add(image2);
+    repository.save(category);
+
+    String response =
+        mvc.perform(get("/api/categories/" + category.getId() + "/images"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    assertTrue(response.contains(String.valueOf(image1.getId())));
+    assertTrue(response.contains(String.valueOf(image2.getId())));
+  }
+
+  @Test
+  @Transactional
+  void deleteOrphanImage_successful() throws Exception {
+    Image image = new Image();
+    image.setData("sample data first".getBytes());
+    imageRepository.save(image);
+
+    Image orphanImage = new Image();
+    orphanImage.setData("sample data second".getBytes());
+    imageRepository.save(orphanImage);
+
+    Category category = new Category();
+    category.setName("test category");
+    category.getImages().add(image);
+    category.getImages().add(orphanImage);
+    repository.save(category);
+
+    mvc.perform(
+            put("/api/categories/" + category.getId() + "/images")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(List.of(image.getId()))))
+        .andExpect(status().isOk());
+
+    assertFalse(imageRepository.existsById(orphanImage.getId()));
   }
 }
