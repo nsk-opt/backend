@@ -1,7 +1,5 @@
 package ru.nskopt.models.entities;
 
-import java.util.HashSet;
-import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Embedded;
@@ -15,6 +13,8 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -40,20 +40,16 @@ public class Product {
 
   private String description;
 
-
   @JsonIgnore
   @ToString.Exclude
   @EqualsAndHashCode.Exclude
-
   @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
   @JoinColumn(name = "pro_images_ids")
   private Set<Image> images = new HashSet<>();
 
-
   @JsonIgnore
   @ToString.Exclude
   @EqualsAndHashCode.Exclude
-
   @ManyToMany
   @JoinTable(
       name = "product_category",
