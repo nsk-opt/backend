@@ -71,10 +71,9 @@ public class ProductService {
   public void updateImages(Long productId, List<Long> imageIds) {
     Product product = findById(productId);
 
-    product.getImages().clear();
-
     List<Image> images = imageService.getImagesByIds(imageIds);
 
+    product.getImages().clear();
     product.getImages().addAll(images);
 
     productRepository.save(product);
