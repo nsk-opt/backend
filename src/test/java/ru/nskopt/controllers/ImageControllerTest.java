@@ -3,7 +3,6 @@ package ru.nskopt.controllers;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import java.io.File;
 import java.nio.file.Files;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,6 +61,29 @@ class ImageControllerTest {
 
     MockMultipartFile multipartFile =
         new MockMultipartFile("file", file.getName(), MediaType.IMAGE_PNG_VALUE, fileContent);
+
+    String responseContent =
+        mockMvc
+            .perform(multipart("/api/images").file(multipartFile))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    Long imageId = Long.parseLong(responseContent);
+
+    assertTrue(imageRepository.findById(imageId).isPresent());
+  }
+
+  @Test
+  void createImage_successful_3() throws Exception {
+    String filePath = "src/test/resources/images/image.webp";
+    File file = new File(filePath);
+
+    byte[] fileContent = Files.readAllBytes(file.toPath());
+
+    MockMultipartFile multipartFile =
+        new MockMultipartFile("file", file.getName(), "image/webp", fileContent);
 
     String responseContent =
         mockMvc
