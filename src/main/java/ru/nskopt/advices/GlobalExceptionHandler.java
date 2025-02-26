@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import ru.nskopt.exceptions.ResourceNotFoundException;
+import ru.nskopt.exceptions.UnsupportedImageFormatException;
 import ru.nskopt.responses.ErrorResponse;
 
 @Slf4j
@@ -64,5 +65,17 @@ public class GlobalExceptionHandler {
     log.info(
         "Failed to read HTTP message. Request details: {}, Message: {}", request, e.getMessage());
     return new ErrorResponse("Invalid input. Please check your request format or parameters.");
+  }
+
+  @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+  @ExceptionHandler(UnsupportedImageFormatException.class)
+  @Operation(
+      summary = "Обработка ошибки 'Неподдерживаемый формат изображения'",
+      description =
+          "Возвращает сообщение об ошибке, если загружаемый формат изображения не поддерживается.")
+  public ErrorResponse handleUnsupportedImageFormatException(
+      UnsupportedImageFormatException e, WebRequest request) {
+    log.info("Unsupported image format: {}, Request details: {}", e.getMessage(), request);
+    return new ErrorResponse("Unsupported image format: " + e.getMessage());
   }
 }
