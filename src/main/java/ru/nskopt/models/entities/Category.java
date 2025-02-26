@@ -35,7 +35,7 @@ public class Category {
   @EqualsAndHashCode.Exclude
   @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
   @JoinColumn(name = "cat_images_id")
-  private Set<Image> images;
+  private Set<Image> images = new HashSet<>();
 
   @JsonIgnore
   @ToString.Exclude
