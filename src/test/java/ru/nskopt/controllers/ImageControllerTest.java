@@ -30,7 +30,7 @@ class ImageControllerTest {
   }
 
   @Test
-  void createImage_successful_1() throws Exception {
+  void createImage_successful_jpg() throws Exception {
     String filePath = "src/test/resources/images/image.jpg";
     File file = new File(filePath);
 
@@ -53,7 +53,7 @@ class ImageControllerTest {
   }
 
   @Test
-  void createImage_successful_2() throws Exception {
+  void createImage_successful_png() throws Exception {
     String filePath = "src/test/resources/images/image.png";
     File file = new File(filePath);
 
@@ -76,7 +76,7 @@ class ImageControllerTest {
   }
 
   @Test
-  void createImage_successful_3() throws Exception {
+  void createImage_successful_webp() throws Exception {
     String filePath = "src/test/resources/images/image.webp";
     File file = new File(filePath);
 
