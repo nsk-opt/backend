@@ -118,6 +118,21 @@ class ImageControllerTest {
   }
 
   @Test
+  void createImage_unsupported_format_null_content_type() throws Exception {
+    String filePath = "src/test/resources/images/image.gif";
+    File file = new File(filePath);
+
+    byte[] fileContent = Files.readAllBytes(file.toPath());
+
+    MockMultipartFile multipartFile =
+        new MockMultipartFile("file", file.getName(), null, fileContent);
+
+    mockMvc
+        .perform(multipart("/api/images").file(multipartFile))
+        .andExpect(status().isUnsupportedMediaType());
+  }
+
+  @Test
   void getImage_successful() throws Exception {
     Image image = new Image();
     image.setData("data".getBytes());
