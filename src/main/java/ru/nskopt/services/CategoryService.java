@@ -36,17 +36,12 @@ public class CategoryService {
   }
 
   public Category update(Long id, UpdateCategoryRequest updateCategoryRequest) {
-    return categoryRepository
-        .findById(id)
-        .map(
-            existingCategory -> {
-              categoryMapper.update(existingCategory, updateCategoryRequest);
+    Category existingCategory = findById(id);
+    categoryMapper.update(existingCategory, updateCategoryRequest);
 
-              log.info("Update {}", existingCategory);
+    log.info("Update {}", existingCategory);
 
-              return categoryRepository.save(existingCategory);
-            })
-        .orElseThrow(() -> new ResourceNotFoundException(id));
+    return categoryRepository.save(existingCategory);
   }
 
   public void deleteById(Long id) {

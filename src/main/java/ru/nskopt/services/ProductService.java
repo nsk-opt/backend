@@ -3,10 +3,10 @@ package ru.nskopt.services;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import ru.nskopt.exceptions.ResourceNotFoundException;
 import ru.nskopt.mappers.Mapper;
 import ru.nskopt.models.entities.Category;
@@ -39,15 +39,10 @@ public class ProductService {
   }
 
   public Product update(Long id, UpdateProductRequest updateProductRequest) {
-    return productRepository
-        .findById(id)
-        .map(
-            existingProduct -> {
-              productMapper.update(existingProduct, updateProductRequest);
-              log.info("Updating product with ID {}: {}", id, existingProduct);
-              return productRepository.save(existingProduct);
-            })
-        .orElseThrow(() -> new ResourceNotFoundException(id));
+    Product existingProduct = findById(id);
+    productMapper.update(existingProduct, updateProductRequest);
+    log.info("Updating product with ID {}: {}", id, existingProduct);
+    return productRepository.save(existingProduct);
   }
 
   public void deleteById(Long id) {
