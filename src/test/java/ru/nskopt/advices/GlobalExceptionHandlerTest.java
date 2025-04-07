@@ -70,7 +70,7 @@ class GlobalExceptionHandlerTest {
     mvc.perform(
             post("/api/categories")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("key: \"value\""))
+                .content("keyss: \"value\""))
         .andExpect(status().isBadRequest())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.error").exists())

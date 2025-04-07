@@ -30,11 +30,11 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.nskopt.App;
+import ru.nskopt.dto.category.CategoryUpdateRequest;
 import ru.nskopt.entities.Category;
 import ru.nskopt.entities.Cost;
 import ru.nskopt.entities.Product;
 import ru.nskopt.entities.image.Image;
-import ru.nskopt.entities.requests.UpdateCategoryRequest;
 import ru.nskopt.entities.user.Role;
 import ru.nskopt.entities.user.User;
 import ru.nskopt.mappers.CategoryMapper;
@@ -140,10 +140,10 @@ class CategoryControllerTest {
     void createCategory_success() throws Exception {
       categoryRepository.deleteAll();
 
-      UpdateCategoryRequest request = new UpdateCategoryRequest();
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
       request.setName("Pants");
 
-      Category sendCategory = categoryMapper.map(request);
+      Category sendCategory = categoryMapper.toCategory(request);
 
       String responseString =
           mvc.perform(
@@ -167,10 +167,10 @@ class CategoryControllerTest {
     void createCategory_success_2() throws Exception {
       categoryRepository.deleteAll();
 
-      UpdateCategoryRequest request = new UpdateCategoryRequest();
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
       request.setName("Pan");
 
-      Category sendCategory = categoryMapper.map(request);
+      Category sendCategory = categoryMapper.toCategory(request);
 
       String responseString =
           mvc.perform(
@@ -194,10 +194,10 @@ class CategoryControllerTest {
     void createCategory_success_3() throws Exception {
       categoryRepository.deleteAll();
 
-      UpdateCategoryRequest request = new UpdateCategoryRequest();
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
       request.setName("Pangkjreodjtjed");
 
-      Category sendCategory = categoryMapper.map(request);
+      Category sendCategory = categoryMapper.toCategory(request);
 
       String responseString =
           mvc.perform(
@@ -219,7 +219,7 @@ class CategoryControllerTest {
 
     @Test
     void createCategory_nameTooShort() throws Exception {
-      UpdateCategoryRequest request = new UpdateCategoryRequest();
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
       request.setName("Pa");
 
       mvc.perform(
@@ -234,7 +234,7 @@ class CategoryControllerTest {
 
     @Test
     void createCategory_nameTooLong() throws Exception {
-      UpdateCategoryRequest request = new UpdateCategoryRequest();
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
       request.setName("Pantsjh uhrwkdjre");
 
       mvc.perform(
@@ -251,10 +251,10 @@ class CategoryControllerTest {
     void updateCategory_success() throws Exception {
       categoryRepository.deleteAll();
 
-      UpdateCategoryRequest request = new UpdateCategoryRequest();
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
       request.setName("Pants");
 
-      Category sendCategory = categoryMapper.map(request);
+      Category sendCategory = categoryMapper.toCategory(request);
 
       String responseString =
           mvc.perform(
@@ -279,7 +279,7 @@ class CategoryControllerTest {
 
       request.setName("Sweater");
 
-      sendCategory = categoryMapper.map(request);
+      sendCategory = categoryMapper.toCategory(request);
 
       responseString =
           mvc.perform(
@@ -303,7 +303,7 @@ class CategoryControllerTest {
     void updateCategory_notExists() throws Exception {
       categoryRepository.deleteAll();
 
-      UpdateCategoryRequest request = new UpdateCategoryRequest();
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
       request.setName("Pants");
 
       mvc.perform(
@@ -468,10 +468,10 @@ class CategoryControllerTest {
     void createCategory_success() throws Exception {
       categoryRepository.deleteAll();
 
-      UpdateCategoryRequest request = new UpdateCategoryRequest();
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
       request.setName("Pants");
 
-      Category sendCategory = categoryMapper.map(request);
+      Category sendCategory = categoryMapper.toCategory(request);
 
       String responseString =
           mvc.perform(
@@ -495,10 +495,10 @@ class CategoryControllerTest {
     void createCategory_success_2() throws Exception {
       categoryRepository.deleteAll();
 
-      UpdateCategoryRequest request = new UpdateCategoryRequest();
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
       request.setName("Pan");
 
-      Category sendCategory = categoryMapper.map(request);
+      Category sendCategory = categoryMapper.toCategory(request);
 
       String responseString =
           mvc.perform(
@@ -522,10 +522,10 @@ class CategoryControllerTest {
     void createCategory_success_3() throws Exception {
       categoryRepository.deleteAll();
 
-      UpdateCategoryRequest request = new UpdateCategoryRequest();
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
       request.setName("Pangkjreodjtjed");
 
-      Category sendCategory = categoryMapper.map(request);
+      Category sendCategory = categoryMapper.toCategory(request);
 
       String responseString =
           mvc.perform(
@@ -547,7 +547,7 @@ class CategoryControllerTest {
 
     @Test
     void createCategory_nameTooShort() throws Exception {
-      UpdateCategoryRequest request = new UpdateCategoryRequest();
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
       request.setName("Pa");
 
       mvc.perform(
@@ -562,7 +562,7 @@ class CategoryControllerTest {
 
     @Test
     void createCategory_nameTooLong() throws Exception {
-      UpdateCategoryRequest request = new UpdateCategoryRequest();
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
       //noinspection SpellCheckingInspection
       request.setName("Pantsjh uhrwkdjre");
 
@@ -580,10 +580,10 @@ class CategoryControllerTest {
     void updateCategory_success() throws Exception {
       categoryRepository.deleteAll();
 
-      UpdateCategoryRequest request = new UpdateCategoryRequest();
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
       request.setName("Pants");
 
-      Category sendCategory = categoryMapper.map(request);
+      Category sendCategory = categoryMapper.toCategory(request);
 
       String responseString =
           mvc.perform(
@@ -608,7 +608,7 @@ class CategoryControllerTest {
 
       request.setName("Sweater");
 
-      sendCategory = categoryMapper.map(request);
+      sendCategory = categoryMapper.toCategory(request);
 
       responseString =
           mvc.perform(
@@ -632,7 +632,7 @@ class CategoryControllerTest {
     void updateCategory_notExists() throws Exception {
       categoryRepository.deleteAll();
 
-      UpdateCategoryRequest request = new UpdateCategoryRequest();
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
       request.setName("Pants");
 
       mvc.perform(
@@ -797,7 +797,7 @@ class CategoryControllerTest {
     void createCategory_success() throws Exception {
       categoryRepository.deleteAll();
 
-      UpdateCategoryRequest request = new UpdateCategoryRequest();
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
       request.setName("Pants");
 
       mvc.perform(
@@ -812,7 +812,7 @@ class CategoryControllerTest {
     void createCategory_success_2() throws Exception {
       categoryRepository.deleteAll();
 
-      UpdateCategoryRequest request = new UpdateCategoryRequest();
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
       request.setName("Pan");
 
       mvc.perform(
@@ -827,7 +827,7 @@ class CategoryControllerTest {
     void createCategory_success_3() throws Exception {
       categoryRepository.deleteAll();
 
-      UpdateCategoryRequest request = new UpdateCategoryRequest();
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
       request.setName("Pangkjreodjtjed");
 
       mvc.perform(
@@ -840,7 +840,7 @@ class CategoryControllerTest {
 
     @Test
     void createCategory_nameTooShort() throws Exception {
-      UpdateCategoryRequest request = new UpdateCategoryRequest();
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
       request.setName("Pa");
 
       mvc.perform(
@@ -853,7 +853,7 @@ class CategoryControllerTest {
 
     @Test
     void createCategory_nameTooLong() throws Exception {
-      UpdateCategoryRequest request = new UpdateCategoryRequest();
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
 
       mvc.perform(
               post("/api/categories")
@@ -870,7 +870,7 @@ class CategoryControllerTest {
       Category category = new Category();
       category.setName("sample name");
 
-      UpdateCategoryRequest request = new UpdateCategoryRequest();
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
       request.setName("Pants");
 
       category = categoryRepository.save(category);
@@ -887,7 +887,7 @@ class CategoryControllerTest {
     void updateCategory_notExists() throws Exception {
       categoryRepository.deleteAll();
 
-      UpdateCategoryRequest request = new UpdateCategoryRequest();
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
       request.setName("Pants");
 
       mvc.perform(

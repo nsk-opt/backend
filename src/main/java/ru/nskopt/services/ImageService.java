@@ -51,13 +51,14 @@ public class ImageService {
     return outputStream.toByteArray();
   }
 
+  @Transactional(readOnly = true)
   public Image getImage(Long id) {
     return imageRepository
         .findById(id)
         .orElseThrow(() -> new ResourceNotFoundException("Image not found " + id));
   }
 
-  @Transactional
+  @Transactional(readOnly = true)
   public byte[] getImageData(Long id) {
     return getImage(id).getData();
   }

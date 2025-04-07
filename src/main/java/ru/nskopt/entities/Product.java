@@ -1,6 +1,5 @@
 package ru.nskopt.entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
@@ -15,16 +14,13 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.util.HashSet;
 import java.util.Set;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import ru.nskopt.entities.image.Image;
 
 @Entity
 @Table(name = "products")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Product {
@@ -41,15 +37,11 @@ public class Product {
 
   private String description;
 
-  @JsonIgnore
-  @ToString.Exclude
   @EqualsAndHashCode.Exclude
   @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
   @JoinColumn(name = "pro_images_ids")
   private Set<Image> images = new HashSet<>();
 
-  @JsonIgnore
-  @ToString.Exclude
   @EqualsAndHashCode.Exclude
   @ManyToMany
   @JoinTable(

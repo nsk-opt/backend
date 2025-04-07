@@ -5,11 +5,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.nskopt.dto.category.CategoryUpdateRequest;
+import ru.nskopt.dto.category.CategoryUserResponse;
 import ru.nskopt.entities.Category;
 import ru.nskopt.entities.image.Image;
-import ru.nskopt.entities.requests.UpdateCategoryRequest;
 import ru.nskopt.exceptions.ResourceNotFoundException;
-import ru.nskopt.mappers.Mapper;
+import ru.nskopt.mappers.CategoryMapper;
 import ru.nskopt.repositories.CategoryRepository;
 import ru.nskopt.repositories.ProductRepository;
 
@@ -21,31 +22,38 @@ public class CategoryService {
   private final CategoryRepository categoryRepository;
   private final ProductRepository productRepository;
   private final ImageService imageService;
-  private final Mapper<Category, UpdateCategoryRequest> categoryMapper;
+  private final CategoryMapper categoryMapper;
 
-  public List<Category> findAll() {
-    return categoryRepository.findAll();
+  @Transactional(readOnly = true)
+  public List<CategoryUserResponse> findAll() {
+    return categoryRepository.findAll().stream().map(categoryMapper::toUserResponse).toList();
   }
 
-  public Category findById(Long id) {
-    return categoryRepository
-        .findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("Category not found " + id));
+  @Transactional(readOnly = true)
+  public CategoryUserResponse findById(Long id) {
+    return categoryMapper.toUserResponse(
+        categoryRepository
+            .findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Category not found " + id)));
   }
 
-  public Category save(UpdateCategoryRequest updateCategoryRequest) {
-    log.info("Save {}", updateCategoryRequest);
+  public CategoryUserResponse save(CategoryUpdateRequest categoryUpdateRequest) {
+    log.info("Save {}", categoryUpdateRequest);
 
-    return categoryRepository.save(categoryMapper.map(updateCategoryRequest));
+    return categoryMapper.toUserResponse(
+        categoryRepository.save(categoryMapper.toCategory(categoryUpdateRequest)));
   }
 
-  public Category update(Long id, UpdateCategoryRequest updateCategoryRequest) {
-    Category existingCategory = findById(id);
-    categoryMapper.update(existingCategory, updateCategoryRequest);
+  public CategoryUserResponse update(Long id, CategoryUpdateRequest categoryUpdateRequest) {
+    Category existingCategory =
+        categoryRepository
+            .findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Category not found " + id));
+    categoryMapper.updateCategoryFromRequest(categoryUpdateRequest, existingCategory);
 
     log.info("Update {}", existingCategory);
 
-    return categoryRepository.save(existingCategory);
+    return categoryMapper.toUserResponse(categoryRepository.save(existingCategory));
   }
 
   public void deleteById(Long id) {
@@ -58,7 +66,10 @@ public class CategoryService {
 
   @Transactional
   public void updateImages(Long categoryId, List<Long> imagesIds) {
-    Category category = findById(categoryId);
+    Category category =
+        categoryRepository
+            .findById(categoryId)
+            .orElseThrow(() -> new ResourceNotFoundException("Category not found " + categoryId));
 
     List<Image> images = imageService.getImagesByIds(imagesIds);
 
@@ -70,9 +81,12 @@ public class CategoryService {
     log.info("Updated images for category ID {}: {}", categoryId, imagesIds);
   }
 
-  @Transactional
-  public List<Long> getImagesIds(Long productId) {
-    Category category = findById(productId);
+  @Transactional(readOnly = true)
+  public List<Long> getImagesIds(Long categoryId) {
+    Category category =
+        categoryRepository
+            .findById(categoryId)
+            .orElseThrow(() -> new ResourceNotFoundException("Category not found " + categoryId));
 
     return category.getImages().stream().map(Image::getId).toList();
   }

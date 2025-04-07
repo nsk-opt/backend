@@ -10,6 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.nskopt.dto.user.security.UserAuthRequest;
 import ru.nskopt.dto.user.security.UserAuthResponse;
 import ru.nskopt.dto.user.security.UserRegistrationRequest;
@@ -47,6 +48,7 @@ public class UserService {
     log.info("User registered successfully: {}", request.getUsername());
   }
 
+  @Transactional(readOnly = true)
   public UserAuthResponse authenticate(UserAuthRequest request) {
     log.info("Starting authentication for user: {}", request.getUsername());
 

@@ -7,12 +7,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.nskopt.dto.product.ProductUpdateRequest;
+import ru.nskopt.dto.product.ProductUserResponse;
 import ru.nskopt.entities.Category;
 import ru.nskopt.entities.Product;
 import ru.nskopt.entities.image.Image;
-import ru.nskopt.entities.requests.UpdateProductRequest;
 import ru.nskopt.exceptions.ResourceNotFoundException;
-import ru.nskopt.mappers.Mapper;
+import ru.nskopt.mappers.ProductMapper;
+import ru.nskopt.repositories.CategoryRepository;
 import ru.nskopt.repositories.ProductRepository;
 
 @Slf4j
@@ -21,30 +23,37 @@ import ru.nskopt.repositories.ProductRepository;
 public class ProductService {
 
   private final ProductRepository productRepository;
+  private final CategoryRepository categoryRepository;
+
   private final ImageService imageService;
-  private final Mapper<Product, UpdateProductRequest> productMapper;
-  private final CategoryService categoryService;
+  private final ProductMapper productMapper;
 
-  public List<Product> findAll() {
-    return productRepository.findAll();
+  @Transactional(readOnly = true)
+  public List<ProductUserResponse> findAll() {
+    return productRepository.findAll().stream().map(productMapper::toUserResponse).toList();
   }
 
-  public Product findById(Long id) {
-    return productRepository
-        .findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("Product not found " + id));
+  @Transactional(readOnly = true)
+  public ProductUserResponse findById(Long id) {
+    return productMapper.toUserResponse(
+        productRepository
+            .findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Product not found " + id)));
   }
 
-  public Product save(UpdateProductRequest updateProductRequest) {
-    log.info("Save {}", updateProductRequest);
-    return productRepository.save(productMapper.map(updateProductRequest));
+  public ProductUserResponse save(ProductUpdateRequest request) {
+    log.info("Save {}", request);
+    return productMapper.toUserResponse(productRepository.save(productMapper.toProduct(request)));
   }
 
-  public Product update(Long id, UpdateProductRequest updateProductRequest) {
-    Product existingProduct = findById(id);
-    productMapper.update(existingProduct, updateProductRequest);
+  public ProductUserResponse update(Long id, ProductUpdateRequest updateProductRequest) {
+    Product existingProduct =
+        productRepository
+            .findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Product not found " + id));
+    productMapper.updateProductFromRequest(updateProductRequest, existingProduct);
     log.info("Updating product with ID {}: {}", id, existingProduct);
-    return productRepository.save(existingProduct);
+    return productMapper.toUserResponse(productRepository.save(existingProduct));
   }
 
   public void deleteById(Long id) {
@@ -55,15 +64,26 @@ public class ProductService {
   }
 
   public void updateCategories(Long productId, List<Long> categoryIds) {
-    Product product = findById(productId);
+    Product product =
+        productRepository
+            .findById(productId)
+            .orElseThrow(() -> new ResourceNotFoundException("Product not found " + productId));
 
     product.getCategories().clear();
 
     if (categoryIds.isEmpty()) log.info("Removed all categories for product ID {}", productId);
 
     Set<Category> categories =
-        categoryIds.stream().map(categoryService::findById).collect(Collectors.toSet());
-
+        categoryIds.stream()
+            .map(
+                categoryId ->
+                    categoryRepository
+                        .findById(categoryId)
+                        .orElseThrow(
+                            () ->
+                                new ResourceNotFoundException(
+                                    "Category with id " + categoryId + " not found")))
+            .collect(Collectors.toSet());
     product.getCategories().addAll(categories);
     productRepository.save(product);
 
@@ -72,7 +92,10 @@ public class ProductService {
 
   @Transactional
   public void updateImages(Long productId, List<Long> imageIds) {
-    Product product = findById(productId);
+    Product product =
+        productRepository
+            .findById(productId)
+            .orElseThrow(() -> new ResourceNotFoundException("Product not found " + productId));
 
     List<Image> images = imageService.getImagesByIds(imageIds);
 
@@ -83,9 +106,12 @@ public class ProductService {
     log.info("Updated images for product ID {}: {}", productId, imageIds);
   }
 
-  @Transactional
+  @Transactional(readOnly = true)
   public List<Long> getImagesIds(Long productId) {
-    Product product = findById(productId);
+    Product product =
+        productRepository
+            .findById(productId)
+            .orElseThrow(() -> new ResourceNotFoundException("Product not found " + productId));
 
     return product.getImages().stream().map(Image::getId).toList();
   }

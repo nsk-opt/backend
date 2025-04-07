@@ -18,8 +18,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import ru.nskopt.entities.Product;
-import ru.nskopt.entities.requests.UpdateProductRequest;
+import ru.nskopt.dto.product.ProductUpdateRequest;
+import ru.nskopt.dto.product.ProductUserResponse;
 import ru.nskopt.services.ProductService;
 
 @RestController
@@ -35,7 +35,7 @@ public class ProductController {
   @Operation(
       summary = "Получить все товары",
       description = "Возвращает список всех доступных товаров.")
-  public List<Product> getAllProducts() {
+  public List<ProductUserResponse> getAllProducts() {
     return productService.findAll();
   }
 
@@ -43,7 +43,7 @@ public class ProductController {
   @Operation(
       summary = "Получить товар по ID",
       description = "Возвращает товар по его уникальному идентификатору.")
-  public Product getProductById(
+  public ProductUserResponse getProductById(
       @Parameter(description = "ID товара", example = "1") @PathVariable Long id) {
     return productService.findById(id);
   }
@@ -54,7 +54,8 @@ public class ProductController {
   @Operation(
       summary = "Создать новый товар",
       description = "Создаёт новый товар на основе переданных данных.")
-  public Product createProduct(@Valid @RequestBody UpdateProductRequest updateProductRequest) {
+  public ProductUserResponse createProduct(
+      @Valid @RequestBody ProductUpdateRequest updateProductRequest) {
     return productService.save(updateProductRequest);
   }
 
@@ -63,9 +64,9 @@ public class ProductController {
   @Operation(
       summary = "Обновить товар по ID",
       description = "Обновляет данные товара по его уникальному идентификатору.")
-  public Product updateProduct(
+  public ProductUserResponse updateProduct(
       @Parameter(description = "ID товара", example = "1") @PathVariable Long id,
-      @Valid @RequestBody UpdateProductRequest updateProductRequest) {
+      @Valid @RequestBody ProductUpdateRequest updateProductRequest) {
     return productService.update(id, updateProductRequest);
   }
 

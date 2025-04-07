@@ -141,6 +141,7 @@ class AuthControllerIntegrationTest {
               .path("accessToken")
               .asText();
 
+      //noinspection OptionalGetWithoutIsPresent
       assertTrue(
           jwtUtils.isTokenValid(jwtToken, userRepository.findByUsername(validUsername).get()),
           "JWT is invalid");

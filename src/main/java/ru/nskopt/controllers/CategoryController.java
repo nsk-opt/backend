@@ -17,8 +17,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import ru.nskopt.entities.Category;
-import ru.nskopt.entities.requests.UpdateCategoryRequest;
+import ru.nskopt.dto.category.CategoryUpdateRequest;
+import ru.nskopt.dto.category.CategoryUserResponse;
 import ru.nskopt.services.CategoryService;
 
 @RestController
@@ -33,7 +33,7 @@ public class CategoryController {
   @Operation(
       summary = "Получить все категории",
       description = "Возвращает список всех доступных категорий.")
-  public List<Category> getAllCategories() {
+  public List<CategoryUserResponse> getAllCategories() {
     return categoryService.findAll();
   }
 
@@ -41,7 +41,7 @@ public class CategoryController {
   @Operation(
       summary = "Получить категорию по ID",
       description = "Возвращает категорию по её уникальному идентификатору.")
-  public Category getCategoryById(
+  public CategoryUserResponse getCategoryById(
       @Parameter(description = "ID категории", example = "1") @PathVariable Long id) {
     return categoryService.findById(id);
   }
@@ -52,8 +52,9 @@ public class CategoryController {
   @Operation(
       summary = "Создать новую категорию",
       description = "Создаёт новую категорию на основе переданных данных.")
-  public Category createCategory(@Valid @RequestBody UpdateCategoryRequest updateCategoryRequest) {
-    return categoryService.save(updateCategoryRequest);
+  public CategoryUserResponse createCategory(
+      @Valid @RequestBody CategoryUpdateRequest categoryUpdateRequest) {
+    return categoryService.save(categoryUpdateRequest);
   }
 
   @PutMapping("/{id}")
@@ -61,10 +62,10 @@ public class CategoryController {
       summary = "Обновить категорию по ID",
       description = "Обновляет данные категории по её уникальному идентификатору.")
   @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
-  public Category updateCategory(
+  public CategoryUserResponse updateCategory(
       @Parameter(description = "ID категории", example = "1") @PathVariable Long id,
-      @Valid @RequestBody UpdateCategoryRequest updateCategoryRequest) {
-    return categoryService.update(id, updateCategoryRequest);
+      @Valid @RequestBody CategoryUpdateRequest categoryUpdateRequest) {
+    return categoryService.update(id, categoryUpdateRequest);
   }
 
   @DeleteMapping("/{id}")

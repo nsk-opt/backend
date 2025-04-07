@@ -1,34 +1,18 @@
 package ru.nskopt.mappers;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import org.mapstruct.*;
+import ru.nskopt.dto.product.ProductUpdateRequest;
+import ru.nskopt.dto.product.ProductUserResponse;
 import ru.nskopt.entities.Product;
-import ru.nskopt.entities.requests.UpdateProductRequest;
 
-@Component
-@RequiredArgsConstructor
-@Slf4j
-public class ProductMapper implements Mapper<Product, UpdateProductRequest> {
+@Mapper(
+    unmappedTargetPolicy = ReportingPolicy.IGNORE,
+    componentModel = MappingConstants.ComponentModel.SPRING)
+public interface ProductMapper {
+  Product toProduct(ProductUpdateRequest request);
 
-  @Override
-  public Product map(UpdateProductRequest value) {
-    Product product = new Product();
-    updateProductFields(product, value);
-    return product;
-  }
+  @Mapping(target = "price", source = "cost.retailPrice")
+  ProductUserResponse toUserResponse(Product product);
 
-  @Override
-  public void update(Product dest, UpdateProductRequest src) {
-    updateProductFields(dest, src);
-  }
-
-  private void updateProductFields(Product product, UpdateProductRequest updateProductRequest) {
-    product.setAvailability(updateProductRequest.getAvailability());
-
-    product.setCost(updateProductRequest.getCost());
-
-    product.setDescription(updateProductRequest.getDescription());
-    product.setName(updateProductRequest.getName());
-  }
+  void updateProductFromRequest(ProductUpdateRequest request, @MappingTarget Product product);
 }

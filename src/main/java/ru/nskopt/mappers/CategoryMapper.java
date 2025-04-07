@@ -1,27 +1,18 @@
 package ru.nskopt.mappers;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.mapstruct.*;
+import ru.nskopt.dto.category.CategoryUpdateRequest;
+import ru.nskopt.dto.category.CategoryUserResponse;
 import ru.nskopt.entities.Category;
-import ru.nskopt.entities.requests.UpdateCategoryRequest;
 
-@Component
-@RequiredArgsConstructor
-public class CategoryMapper implements Mapper<Category, UpdateCategoryRequest> {
+@Mapper(
+    unmappedTargetPolicy = ReportingPolicy.IGNORE,
+    componentModel = MappingConstants.ComponentModel.SPRING)
+public interface CategoryMapper {
 
-  @Override
-  public Category map(UpdateCategoryRequest value) {
-    Category category = new Category();
-    updateCategoryFields(category, value);
-    return category;
-  }
+  Category toCategory(CategoryUpdateRequest request);
 
-  @Override
-  public void update(Category dest, UpdateCategoryRequest src) {
-    updateCategoryFields(dest, src);
-  }
+  CategoryUserResponse toUserResponse(Category category);
 
-  private void updateCategoryFields(Category category, UpdateCategoryRequest categoryRequest) {
-    category.setName(categoryRequest.getName());
-  }
+  void updateCategoryFromRequest(CategoryUpdateRequest request, @MappingTarget Category category);
 }

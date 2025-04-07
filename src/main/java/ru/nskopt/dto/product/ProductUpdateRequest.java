@@ -1,4 +1,4 @@
-package ru.nskopt.entities.requests;
+package ru.nskopt.dto.product;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
@@ -9,7 +9,7 @@ import lombok.Data;
 import ru.nskopt.entities.Cost;
 
 @Data
-public class UpdateProductRequest {
+public class ProductUpdateRequest {
   @NotBlank(message = "Name cannot be blank")
   @Size(min = 3, max = 16, message = "The length of the name should be in the range from 3 to 16")
   @Schema(description = "Название товара", example = "Кроссовки Nike air Monarch IV")

@@ -27,11 +27,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.transaction.annotation.Transactional;
 import ru.nskopt.App;
+import ru.nskopt.dto.product.ProductUpdateRequest;
 import ru.nskopt.entities.Category;
 import ru.nskopt.entities.Cost;
 import ru.nskopt.entities.Product;
 import ru.nskopt.entities.image.Image;
-import ru.nskopt.entities.requests.UpdateProductRequest;
 import ru.nskopt.entities.user.Role;
 import ru.nskopt.entities.user.User;
 import ru.nskopt.repositories.CategoryRepository;
@@ -92,10 +92,10 @@ class ProductControllerTest {
     return productRepository.save(product);
   }
 
-  private UpdateProductRequest createRequest(
+  private ProductUpdateRequest createRequest(
       String name, int availability, BigDecimal wholesalePrice, BigDecimal retailPrice) {
 
-    UpdateProductRequest request = new UpdateProductRequest();
+    ProductUpdateRequest request = new ProductUpdateRequest();
 
     request.setName(name);
     request.setAvailability(availability);
@@ -105,7 +105,7 @@ class ProductControllerTest {
     return request;
   }
 
-  private void expectCreatedProduct(UpdateProductRequest request, ResultMatcher httpStatus)
+  private void expectCreatedProduct(ProductUpdateRequest request, ResultMatcher httpStatus)
       throws Exception {
     mockMvc
         .perform(
@@ -114,22 +114,13 @@ class ProductControllerTest {
                 .header("Authorization", "Bearer " + adminToken)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(httpStatus)
-
-        // info
         .andExpect(jsonPath("$.name").value(request.getName()))
         .andExpect(jsonPath("$.availability").value(request.getAvailability()))
         .andExpect(jsonPath("$.description").value(request.getDescription()))
-
-        // cost
-        .andExpect(jsonPath("$.cost").exists())
-        .andExpect(
-            jsonPath("$.cost.wholesalePrice")
-                .value(request.getCost().getWholesalePrice().doubleValue()))
-        .andExpect(
-            jsonPath("$.cost.retailPrice").value(request.getCost().getRetailPrice().doubleValue()));
+        .andExpect(jsonPath("$.price").value(request.getCost().getRetailPrice().doubleValue()));
   }
 
-  private void expectUpdatedProduct(Long id, UpdateProductRequest request) throws Exception {
+  private void expectUpdatedProduct(Long id, ProductUpdateRequest request) throws Exception {
     mockMvc
         .perform(
             put("/api/products/" + id)
@@ -142,14 +133,7 @@ class ProductControllerTest {
         .andExpect(jsonPath("$.name").value(request.getName()))
         .andExpect(jsonPath("$.availability").value(request.getAvailability()))
         .andExpect(jsonPath("$.description").value(request.getDescription()))
-
-        // cost
-        .andExpect(jsonPath("$.cost").exists())
-        .andExpect(
-            jsonPath("$.cost.wholesalePrice")
-                .value(request.getCost().getWholesalePrice().doubleValue()))
-        .andExpect(
-            jsonPath("$.cost.retailPrice").value(request.getCost().getRetailPrice().doubleValue()));
+        .andExpect(jsonPath("$.price").value(request.getCost().getRetailPrice().doubleValue()));
   }
 
   private void expectSuccessfulProductDeletion(Long id) throws Exception {
@@ -168,7 +152,7 @@ class ProductControllerTest {
         .andExpect(status().isNotFound());
   }
 
-  private void expectCreateBadRequest(UpdateProductRequest request) throws Exception {
+  private void expectCreateBadRequest(ProductUpdateRequest request) throws Exception {
     mockMvc
         .perform(
             post("/api/products")
@@ -179,12 +163,12 @@ class ProductControllerTest {
         .andExpect(jsonPath("$.error").exists());
   }
 
-  private void expectUpdateBadRequest(Long id, UpdateProductRequest request) throws Exception {
+  private void expectUpdateBadRequest(Long id, ProductUpdateRequest request) throws Exception {
     expectUpdateBadRequest(id, request, status().isBadRequest());
   }
 
   private void expectUpdateBadRequest(
-      Long id, UpdateProductRequest request, ResultMatcher httpStatus) throws Exception {
+      Long id, ProductUpdateRequest request, ResultMatcher httpStatus) throws Exception {
     mockMvc
         .perform(
             put("/api/products/" + id)
@@ -200,7 +184,7 @@ class ProductControllerTest {
   class AdminAccessTest {
     @Test
     void createProduct_Successful_1() throws Exception {
-      UpdateProductRequest request =
+      ProductUpdateRequest request =
           createRequest("New Product", 5, new BigDecimal("200.00"), new BigDecimal("300.00"));
 
       expectCreatedProduct(request, status().isCreated());
@@ -208,7 +192,7 @@ class ProductControllerTest {
 
     @Test
     void createProduct_Successful_2() throws Exception {
-      UpdateProductRequest request =
+      ProductUpdateRequest request =
           createRequest("New Product", 5, new BigDecimal("0.00"), new BigDecimal("777372.00"));
 
       expectCreatedProduct(request, status().isCreated());
@@ -216,7 +200,7 @@ class ProductControllerTest {
 
     @Test
     void createProduct_verification_invalid_cost_1() throws Exception {
-      UpdateProductRequest request =
+      ProductUpdateRequest request =
           createRequest("New Product", 5, new BigDecimal("-200.00"), new BigDecimal("137.00"));
 
       expectCreateBadRequest(request);
@@ -224,7 +208,7 @@ class ProductControllerTest {
 
     @Test
     void createProduct_verification_invalid_cost_2() throws Exception {
-      UpdateProductRequest request =
+      ProductUpdateRequest request =
           createRequest("New Product", 5, new BigDecimal("137.00"), new BigDecimal("-300.00"));
 
       expectCreateBadRequest(request);
@@ -232,7 +216,7 @@ class ProductControllerTest {
 
     @Test
     void createProduct_verification_zero_wholesale_price() throws Exception {
-      UpdateProductRequest request =
+      ProductUpdateRequest request =
           createRequest("New Product", 5, new BigDecimal("0.00"), new BigDecimal("300.00"));
 
       expectCreatedProduct(request, status().isCreated());
@@ -240,7 +224,7 @@ class ProductControllerTest {
 
     @Test
     void updateProduct_notExists() throws Exception {
-      UpdateProductRequest request =
+      ProductUpdateRequest request =
           createRequest("UPDATE PRODUCT", 5, new BigDecimal("0.00"), new BigDecimal("300.00"));
 
       expectUpdateBadRequest(1L, request, status().isNotFound());
@@ -256,7 +240,7 @@ class ProductControllerTest {
               new BigDecimal("100.00"),
               new BigDecimal("150.00"));
 
-      UpdateProductRequest request =
+      ProductUpdateRequest request =
           createRequest("UPDATE PRODUCT", 5, new BigDecimal("0.00"), new BigDecimal("30.00"));
 
       expectUpdatedProduct(product.getId(), request);
@@ -272,7 +256,7 @@ class ProductControllerTest {
               new BigDecimal("100.00"),
               new BigDecimal("150.00"));
 
-      UpdateProductRequest request =
+      ProductUpdateRequest request =
           createRequest("UPDATE PRODUCT", 4, new BigDecimal("154.00"), new BigDecimal("30.00"));
 
       expectUpdatedProduct(product.getId(), request);
@@ -288,7 +272,7 @@ class ProductControllerTest {
               new BigDecimal("100.00"),
               new BigDecimal("150.00"));
 
-      UpdateProductRequest request =
+      ProductUpdateRequest request =
           createRequest("pants versace", 4, new BigDecimal("154.00"), new BigDecimal("30.00"));
 
       expectUpdatedProduct(product.getId(), request);
@@ -304,7 +288,7 @@ class ProductControllerTest {
               new BigDecimal("100.00"),
               new BigDecimal("150.00"));
 
-      UpdateProductRequest request =
+      ProductUpdateRequest request =
           createRequest(
               "UPDATE PRODUCT TOO LONG NAME..", 5, new BigDecimal("0.00"), new BigDecimal("30.00"));
 
@@ -321,7 +305,7 @@ class ProductControllerTest {
               new BigDecimal("100.00"),
               new BigDecimal("150.00"));
 
-      UpdateProductRequest request =
+      ProductUpdateRequest request =
           createRequest(
               "UPDATE PRODUCT TOO LONG NAME..",
               5,
@@ -341,7 +325,7 @@ class ProductControllerTest {
               new BigDecimal("100.00"),
               new BigDecimal("150.00"));
 
-      UpdateProductRequest request =
+      ProductUpdateRequest request =
           createRequest(
               "UPDATE PRODUCT TOO LONG NAME..",
               5,
@@ -361,7 +345,7 @@ class ProductControllerTest {
               new BigDecimal("100.00"),
               new BigDecimal("150.00"));
 
-      UpdateProductRequest request =
+      ProductUpdateRequest request =
           createRequest(
               "UPDATE PRODUCT TOO LONG NAME..",
               5,
@@ -548,7 +532,7 @@ class ProductControllerTest {
 
     @Test
     void createProduct_verification_emptyName() throws Exception {
-      UpdateProductRequest request =
+      ProductUpdateRequest request =
           createRequest("", 5, new BigDecimal("200.00"), new BigDecimal("300.00"));
 
       expectCreateBadRequest(request);
@@ -556,7 +540,7 @@ class ProductControllerTest {
 
     @Test
     void createProduct_verification_negativeAvailability() throws Exception {
-      UpdateProductRequest request =
+      ProductUpdateRequest request =
           createRequest("New Product", -5, new BigDecimal("200.00"), new BigDecimal("300.00"));
 
       expectCreateBadRequest(request);
@@ -752,9 +736,7 @@ class ProductControllerTest {
         .perform(get("/api/products").contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].name").value(product.getName()))
-        .andExpect(jsonPath("$[0].cost").exists())
-        .andExpect(jsonPath("$[0].cost.wholesalePrice").value(100.0))
-        .andExpect(jsonPath("$[0].cost.retailPrice").value(150.0));
+        .andExpect(jsonPath("$[0].price").value(150.0));
   }
 
   @Test
@@ -798,8 +780,7 @@ class ProductControllerTest {
         .andExpect(jsonPath("$.name").value(product.getName()))
         .andExpect(jsonPath("$.availability").value(product.getAvailability()))
         .andExpect(jsonPath("$.description").value(product.getDescription()))
-        .andExpect(jsonPath("$.cost.wholesalePrice").value(100.0))
-        .andExpect(jsonPath("$.cost.retailPrice").value(150.0));
+        .andExpect(jsonPath("$.price").value(150.0));
   }
 
   @Test
@@ -819,14 +800,12 @@ class ProductControllerTest {
         .andExpect(jsonPath("$[0].name").value(product1.getName()))
         .andExpect(jsonPath("$[0].availability").value(product1.getAvailability()))
         .andExpect(jsonPath("$[0].description").value(product1.getDescription()))
-        .andExpect(jsonPath("$[0].cost.wholesalePrice").value(100.0))
-        .andExpect(jsonPath("$[0].cost.retailPrice").value(150.0))
+        .andExpect(jsonPath("$[0].price").value(150.0))
         .andExpect(jsonPath("$[1].id").value(product2.getId()))
         .andExpect(jsonPath("$[1].name").value(product2.getName()))
         .andExpect(jsonPath("$[1].availability").value(product2.getAvailability()))
         .andExpect(jsonPath("$[1].description").value(product2.getDescription()))
-        .andExpect(jsonPath("$[1].cost.wholesalePrice").value(200.0))
-        .andExpect(jsonPath("$[1].cost.retailPrice").value(250.0));
+        .andExpect(jsonPath("$[1].price").value(250.0));
   }
 
   @Test
