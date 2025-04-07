@@ -12,8 +12,8 @@ import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import ru.nskopt.entities.image.Image;
 import ru.nskopt.exceptions.ResourceNotFoundException;
-import ru.nskopt.models.entities.Image;
 import ru.nskopt.properties.ImageCompressionProperties;
 import ru.nskopt.repositories.ImageRepository;
 
@@ -52,7 +52,9 @@ public class ImageService {
   }
 
   public Image getImage(Long id) {
-    return imageRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(id));
+    return imageRepository
+        .findById(id)
+        .orElseThrow(() -> new ResourceNotFoundException("Image not found " + id));
   }
 
   @Transactional
@@ -68,7 +70,8 @@ public class ImageService {
 
       List<Long> notFoundIds = ids.stream().filter(id -> !foundIds.contains(id)).toList();
 
-      throw new ResourceNotFoundException(notFoundIds);
+      throw new ResourceNotFoundException(
+          "Image not found " + notFoundIds.stream().map(id -> id + " ").toString());
     }
 
     return result;

@@ -3,8 +3,8 @@ package ru.nskopt.mappers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import ru.nskopt.models.entities.Product;
-import ru.nskopt.models.requests.UpdateProductRequest;
+import ru.nskopt.entities.Product;
+import ru.nskopt.entities.requests.UpdateProductRequest;
 
 @Component
 @RequiredArgsConstructor

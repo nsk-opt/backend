@@ -1,4 +1,4 @@
-package ru.nskopt.models.requests;
+package ru.nskopt.entities.requests;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
-import ru.nskopt.models.entities.Cost;
+import ru.nskopt.entities.Cost;
 
 @Data
 public class UpdateProductRequest {

@@ -15,39 +15,64 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.transaction.annotation.Transactional;
 import ru.nskopt.App;
-import ru.nskopt.models.entities.Category;
-import ru.nskopt.models.entities.Cost;
-import ru.nskopt.models.entities.Image;
-import ru.nskopt.models.entities.Product;
-import ru.nskopt.models.requests.UpdateProductRequest;
+import ru.nskopt.entities.Category;
+import ru.nskopt.entities.Cost;
+import ru.nskopt.entities.Product;
+import ru.nskopt.entities.image.Image;
+import ru.nskopt.entities.requests.UpdateProductRequest;
+import ru.nskopt.entities.user.Role;
+import ru.nskopt.entities.user.User;
 import ru.nskopt.repositories.CategoryRepository;
 import ru.nskopt.repositories.ImageRepository;
 import ru.nskopt.repositories.ProductRepository;
+import ru.nskopt.repositories.UserRepository;
+import ru.nskopt.utils.JwtUtils;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, classes = App.class)
 @AutoConfigureMockMvc
 class ProductControllerTest {
 
-  @Autowired private MockMvc mockMvc;
+  @Autowired MockMvc mockMvc;
 
-  @Autowired private ProductRepository productRepository;
-  @Autowired private CategoryRepository categoryRepository;
-  @Autowired private ImageRepository imageRepository;
+  @Autowired ProductRepository productRepository;
+  @Autowired CategoryRepository categoryRepository;
+  @Autowired ImageRepository imageRepository;
+  @Autowired UserRepository userRepository;
+  @Autowired JwtUtils jwtUtils;
+  @Autowired PasswordEncoder passwordEncoder;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired ObjectMapper objectMapper;
+
+  User admin;
+  String adminToken;
+
+  void createAdmin() {
+    User user = new User();
+    user.setUsername("username123213");
+    user.setPassword(passwordEncoder.encode("footerNeck8273te"));
+    user.setRole(Role.ROLE_ADMIN);
+
+    admin = userRepository.save(user);
+    adminToken = jwtUtils.generateToken(user);
+  }
 
   @BeforeEach
   void setUp() {
     productRepository.deleteAll();
+    userRepository.deleteAll();
+    createAdmin();
   }
 
   private Product createProduct(
@@ -68,17 +93,13 @@ class ProductControllerTest {
   }
 
   private UpdateProductRequest createRequest(
-      String name,
-      int availability,
-      String description,
-      BigDecimal wholesalePrice,
-      BigDecimal retailPrice) {
+      String name, int availability, BigDecimal wholesalePrice, BigDecimal retailPrice) {
 
     UpdateProductRequest request = new UpdateProductRequest();
 
     request.setName(name);
     request.setAvailability(availability);
-    request.setDescription(description);
+    request.setDescription("New Description");
     request.setCost(new Cost(wholesalePrice, retailPrice));
 
     return request;
@@ -90,6 +111,7 @@ class ProductControllerTest {
         .perform(
             post("/api/products")
                 .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + adminToken)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(httpStatus)
 
@@ -112,6 +134,7 @@ class ProductControllerTest {
         .perform(
             put("/api/products/" + id)
                 .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + adminToken)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isOk())
 
@@ -130,13 +153,19 @@ class ProductControllerTest {
   }
 
   private void expectSuccessfulProductDeletion(Long id) throws Exception {
-    mockMvc.perform(delete("/api/products/" + id)).andExpect(status().isNoContent());
+    mockMvc
+        .perform(delete("/api/products/" + id).header("Authorization", "Bearer " + adminToken))
+        .andExpect(status().isNoContent());
 
-    mockMvc.perform(get("/api/products/" + id)).andExpect(status().isNotFound());
+    mockMvc
+        .perform(get("/api/products/" + id).header("Authorization", "Bearer " + adminToken))
+        .andExpect(status().isNotFound());
   }
 
   private void expectNotFoundProductDeletion(Long id) throws Exception {
-    mockMvc.perform(delete("/api/products/" + id)).andExpect(status().isNotFound());
+    mockMvc
+        .perform(delete("/api/products/" + id).header("Authorization", "Bearer " + adminToken))
+        .andExpect(status().isNotFound());
   }
 
   private void expectCreateBadRequest(UpdateProductRequest request) throws Exception {
@@ -144,6 +173,7 @@ class ProductControllerTest {
         .perform(
             post("/api/products")
                 .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + adminToken)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.error").exists());
@@ -159,9 +189,546 @@ class ProductControllerTest {
         .perform(
             put("/api/products/" + id)
                 .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + adminToken)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(httpStatus)
         .andExpect(jsonPath("$.error").exists());
+  }
+
+  @Nested
+  @DisplayName("/api/products -- Admin access test")
+  class AdminAccessTest {
+    @Test
+    void createProduct_Successful_1() throws Exception {
+      UpdateProductRequest request =
+          createRequest("New Product", 5, new BigDecimal("200.00"), new BigDecimal("300.00"));
+
+      expectCreatedProduct(request, status().isCreated());
+    }
+
+    @Test
+    void createProduct_Successful_2() throws Exception {
+      UpdateProductRequest request =
+          createRequest("New Product", 5, new BigDecimal("0.00"), new BigDecimal("777372.00"));
+
+      expectCreatedProduct(request, status().isCreated());
+    }
+
+    @Test
+    void createProduct_verification_invalid_cost_1() throws Exception {
+      UpdateProductRequest request =
+          createRequest("New Product", 5, new BigDecimal("-200.00"), new BigDecimal("137.00"));
+
+      expectCreateBadRequest(request);
+    }
+
+    @Test
+    void createProduct_verification_invalid_cost_2() throws Exception {
+      UpdateProductRequest request =
+          createRequest("New Product", 5, new BigDecimal("137.00"), new BigDecimal("-300.00"));
+
+      expectCreateBadRequest(request);
+    }
+
+    @Test
+    void createProduct_verification_zero_wholesale_price() throws Exception {
+      UpdateProductRequest request =
+          createRequest("New Product", 5, new BigDecimal("0.00"), new BigDecimal("300.00"));
+
+      expectCreatedProduct(request, status().isCreated());
+    }
+
+    @Test
+    void updateProduct_notExists() throws Exception {
+      UpdateProductRequest request =
+          createRequest("UPDATE PRODUCT", 5, new BigDecimal("0.00"), new BigDecimal("300.00"));
+
+      expectUpdateBadRequest(1L, request, status().isNotFound());
+    }
+
+    @Test
+    void updateProduct_successful_1() throws Exception {
+      Product product =
+          createProduct(
+              "Test Product",
+              10,
+              "Test Description",
+              new BigDecimal("100.00"),
+              new BigDecimal("150.00"));
+
+      UpdateProductRequest request =
+          createRequest("UPDATE PRODUCT", 5, new BigDecimal("0.00"), new BigDecimal("30.00"));
+
+      expectUpdatedProduct(product.getId(), request);
+    }
+
+    @Test
+    void updateProduct_successful_2() throws Exception {
+      Product product =
+          createProduct(
+              "Test Product",
+              10,
+              "Test Description",
+              new BigDecimal("100.00"),
+              new BigDecimal("150.00"));
+
+      UpdateProductRequest request =
+          createRequest("UPDATE PRODUCT", 4, new BigDecimal("154.00"), new BigDecimal("30.00"));
+
+      expectUpdatedProduct(product.getId(), request);
+    }
+
+    @Test
+    void updateProduct_successful_3() throws Exception {
+      Product product =
+          createProduct(
+              "pants gucci",
+              1,
+              "Test Description",
+              new BigDecimal("100.00"),
+              new BigDecimal("150.00"));
+
+      UpdateProductRequest request =
+          createRequest("pants versace", 4, new BigDecimal("154.00"), new BigDecimal("30.00"));
+
+      expectUpdatedProduct(product.getId(), request);
+    }
+
+    @Test
+    void updateProduct_verification_invalid_name() throws Exception {
+      Product product =
+          createProduct(
+              "Test Product",
+              10,
+              "Test Description",
+              new BigDecimal("100.00"),
+              new BigDecimal("150.00"));
+
+      UpdateProductRequest request =
+          createRequest(
+              "UPDATE PRODUCT TOO LONG NAME..", 5, new BigDecimal("0.00"), new BigDecimal("30.00"));
+
+      expectUpdateBadRequest(product.getId(), request);
+    }
+
+    @Test
+    void updateProduct_verification_invalid_cost_1() throws Exception {
+      Product product =
+          createProduct(
+              "Test Product",
+              10,
+              "Test Description",
+              new BigDecimal("100.00"),
+              new BigDecimal("150.00"));
+
+      UpdateProductRequest request =
+          createRequest(
+              "UPDATE PRODUCT TOO LONG NAME..",
+              5,
+              new BigDecimal("-30.00"),
+              new BigDecimal("30.00"));
+
+      expectUpdateBadRequest(product.getId(), request);
+    }
+
+    @Test
+    void updateProduct_verification_invalid_cost_2() throws Exception {
+      Product product =
+          createProduct(
+              "Test Product",
+              10,
+              "Test Description",
+              new BigDecimal("100.00"),
+              new BigDecimal("150.00"));
+
+      UpdateProductRequest request =
+          createRequest(
+              "UPDATE PRODUCT TOO LONG NAME..",
+              5,
+              new BigDecimal("-30.00"),
+              new BigDecimal("-30.00"));
+
+      expectUpdateBadRequest(product.getId(), request);
+    }
+
+    @Test
+    void updateProduct_verification_invalid_cost_3() throws Exception {
+      Product product =
+          createProduct(
+              "Test Product",
+              10,
+              "Test Description",
+              new BigDecimal("100.00"),
+              new BigDecimal("150.00"));
+
+      UpdateProductRequest request =
+          createRequest(
+              "UPDATE PRODUCT TOO LONG NAME..",
+              5,
+              new BigDecimal("30.00"),
+              new BigDecimal("-30.00"));
+
+      expectUpdateBadRequest(product.getId(), request);
+    }
+
+    @Test
+    void deleteProduct_successful() throws Exception {
+      Product product =
+          createProduct(
+              "Test Product",
+              10,
+              "Test Description",
+              new BigDecimal("100.00"),
+              new BigDecimal("150.00"));
+
+      expectSuccessfulProductDeletion(product.getId());
+    }
+
+    @Test
+    void deleteProduct_notFound() throws Exception {
+      expectNotFoundProductDeletion(444L);
+    }
+
+    @Test
+    void deleteProduct_notFound_2() throws Exception {
+      expectNotFoundProductDeletion(447L);
+    }
+
+    @Test
+    @Transactional
+    void updateCategories_successful() throws Exception {
+      Product product =
+          createProduct(
+              "Test Product",
+              10,
+              "Test Description",
+              new BigDecimal("100.00"),
+              new BigDecimal("150.00"));
+
+      Category category1 = new Category();
+      category1.setName("Category 1");
+      categoryRepository.save(category1);
+
+      Category category2 = new Category();
+      category2.setName("Category 2");
+      categoryRepository.save(category2);
+
+      Category category3 = new Category();
+      category3.setName("Category 3");
+      categoryRepository.save(category3);
+
+      mockMvc
+          .perform(
+              put("/api/products/" + product.getId() + "/categories")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + adminToken)
+                  .content(
+                      objectMapper.writeValueAsString(
+                          List.of(category1.getId(), category2.getId(), category3.getId()))))
+          .andExpect(status().isOk());
+
+      Product updatedProduct =
+          productRepository.findById(product.getId()).orElseThrow(Exception::new);
+      Set<Category> categories = updatedProduct.getCategories();
+
+      assertTrue(categories.contains(category1));
+      assertTrue(categories.contains(category2));
+      assertTrue(categories.contains(category3));
+      assertEquals(3, categories.size());
+    }
+
+    @Test
+    @Transactional
+    void updateCategories_successful_1() throws Exception {
+      Product product =
+          createProduct(
+              "Test Product",
+              10,
+              "Test Description",
+              new BigDecimal("100.00"),
+              new BigDecimal("150.00"));
+
+      Category category1 = new Category();
+      category1.setName("Category 1");
+      categoryRepository.save(category1);
+
+      Category category2 = new Category();
+      category2.setName("Category 2");
+      categoryRepository.save(category2);
+
+      Category category3 = new Category();
+      category3.setName("Category 3");
+      categoryRepository.save(category3);
+
+      product.getCategories().addAll(List.of(category1, category2, category3));
+      productRepository.save(product);
+
+      mockMvc
+          .perform(
+              put("/api/products/" + product.getId() + "/categories")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + adminToken)
+                  .content(
+                      objectMapper.writeValueAsString(
+                          List.of(category1.getId(), category3.getId()))))
+          .andExpect(status().isOk());
+
+      Product updatedProduct =
+          productRepository.findById(product.getId()).orElseThrow(Exception::new);
+      Set<Category> categories = updatedProduct.getCategories();
+
+      assertTrue(categories.contains(category1));
+      assertTrue(categories.contains(category3));
+      assertEquals(2, categories.size());
+    }
+
+    @Test
+    @Transactional
+    void updateCategories_delete_all() throws Exception {
+      Product product =
+          createProduct(
+              "Test Product",
+              10,
+              "Test Description",
+              new BigDecimal("100.00"),
+              new BigDecimal("150.00"));
+
+      Category category = new Category();
+      category.setName("Category 1");
+      categoryRepository.save(category);
+
+      product.getCategories().add(category);
+      productRepository.save(product);
+
+      mockMvc
+          .perform(
+              put("/api/products/" + product.getId() + "/categories")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + adminToken)
+                  .content(objectMapper.writeValueAsString(List.of())))
+          .andExpect(status().isOk());
+
+      Product updatedProduct =
+          productRepository.findById(product.getId()).orElseThrow(Exception::new);
+      Set<Category> categories = updatedProduct.getCategories();
+
+      assertTrue(categories.isEmpty());
+    }
+
+    @Test
+    @Transactional
+    void updateCategories_emptyCategories() throws Exception {
+      Product product =
+          createProduct(
+              "Test Product",
+              10,
+              "Test Description",
+              new BigDecimal("100.00"),
+              new BigDecimal("150.00"));
+
+      mockMvc
+          .perform(
+              put("/api/products/" + product.getId() + "/categories")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + adminToken)
+                  .content(objectMapper.writeValueAsString(List.of())))
+          .andExpect(status().isOk());
+    }
+
+    @Test
+    void updateCategories_productNotFound() throws Exception {
+      mockMvc
+          .perform(
+              put("/api/products/999/categories")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + adminToken)
+                  .content(objectMapper.writeValueAsString(List.of(1L, 2L, 3L))))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void createProduct_verification_emptyName() throws Exception {
+      UpdateProductRequest request =
+          createRequest("", 5, new BigDecimal("200.00"), new BigDecimal("300.00"));
+
+      expectCreateBadRequest(request);
+    }
+
+    @Test
+    void createProduct_verification_negativeAvailability() throws Exception {
+      UpdateProductRequest request =
+          createRequest("New Product", -5, new BigDecimal("200.00"), new BigDecimal("300.00"));
+
+      expectCreateBadRequest(request);
+    }
+
+    @Test
+    void deleteProduct_checkDatabase() throws Exception {
+      Product product =
+          createProduct(
+              "Test Product",
+              10,
+              "Test Description",
+              new BigDecimal("100.00"),
+              new BigDecimal("150.00"));
+
+      mockMvc
+          .perform(
+              delete("/api/products/" + product.getId())
+                  .header("Authorization", "Bearer " + adminToken))
+          .andExpect(status().isNoContent());
+
+      assertFalse(productRepository.existsById(product.getId()));
+    }
+
+    @Test
+    @Transactional
+    void addImage_successful_one() throws Exception {
+      Image image = new Image();
+      image.setData("sample data".getBytes());
+      imageRepository.save(image);
+
+      Product product = new Product();
+      product.setName("test category");
+      product.setAvailability(30);
+      product.setDescription("sample description");
+      product.setCost(new Cost(BigDecimal.valueOf(130), BigDecimal.valueOf(2500)));
+      productRepository.save(product);
+
+      mockMvc
+          .perform(
+              put("/api/products/" + product.getId() + "/images")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + adminToken)
+                  .content(objectMapper.writeValueAsString(List.of(image.getId()))))
+          .andExpect(status().isOk());
+
+      assertEquals(1, product.getImages().size());
+    }
+
+    @Test
+    @Transactional
+    void addImage_successful_multiple() throws Exception {
+      Image image1 = new Image();
+      image1.setData("sample data first".getBytes());
+      imageRepository.save(image1);
+
+      Image image2 = new Image();
+      image2.setData("sample data second".getBytes());
+      imageRepository.save(image2);
+
+      Product product = new Product();
+      product.setName("test category");
+      product.setAvailability(30);
+      product.setDescription("sample description");
+      product.setCost(new Cost(BigDecimal.valueOf(130), BigDecimal.valueOf(2500)));
+      productRepository.save(product);
+
+      mockMvc
+          .perform(
+              put("/api/products/" + product.getId() + "/images")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + adminToken)
+                  .content(
+                      objectMapper.writeValueAsString(List.of(image1.getId(), image2.getId()))))
+          .andExpect(status().isOk());
+
+      assertEquals(2, product.getImages().size());
+    }
+
+    @Test
+    @Transactional
+    void addImage_not_exists_one() throws Exception {
+
+      Product product = new Product();
+      product.setName("test category");
+      product.setAvailability(30);
+      product.setDescription("sample description");
+      product.setCost(new Cost(BigDecimal.valueOf(130), BigDecimal.valueOf(2500)));
+      productRepository.save(product);
+
+      mockMvc
+          .perform(
+              put("/api/products/" + product.getId() + "/images")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + adminToken)
+                  .content(objectMapper.writeValueAsString(List.of(1))))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @Transactional
+    void addImage_not_exists_one_and_one_exists() throws Exception {
+      Image image = new Image();
+      image.setData("sample image data".getBytes());
+
+      Product product = new Product();
+      product.setName("test category");
+      product.setAvailability(30);
+      product.setDescription("sample description");
+      product.setCost(new Cost(BigDecimal.valueOf(130), BigDecimal.valueOf(2500)));
+      product.getImages().add(image);
+      productRepository.save(product);
+
+      mockMvc
+          .perform(
+              put("/api/products/" + product.getId() + "/images")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + adminToken)
+                  .content(objectMapper.writeValueAsString(List.of(1, image.getId()))))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @Transactional
+    void addImage_not_exists_multiple() throws Exception {
+
+      Product product = new Product();
+      product.setName("test category");
+      product.setAvailability(30);
+      product.setDescription("sample description");
+      product.setCost(new Cost(BigDecimal.valueOf(130), BigDecimal.valueOf(2500)));
+      productRepository.save(product);
+
+      mockMvc
+          .perform(
+              put("/api/products/" + product.getId() + "/images")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + adminToken)
+                  .content(objectMapper.writeValueAsString(List.of(1, 2, 3))))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @Transactional
+    void deleteOrphanImage_successful() throws Exception {
+      Image image = new Image();
+      image.setData("sample data first".getBytes());
+      imageRepository.save(image);
+
+      Image orphanImage = new Image();
+      orphanImage.setData("sample data second".getBytes());
+      imageRepository.save(orphanImage);
+
+      Product product = new Product();
+      product.setName("test category");
+      product.setAvailability(30);
+      product.setDescription("sample description");
+      product.setCost(new Cost(BigDecimal.valueOf(130), BigDecimal.valueOf(2500)));
+      product.getImages().add(image);
+      product.getImages().add(orphanImage);
+      productRepository.save(product);
+
+      mockMvc
+          .perform(
+              put("/api/products/" + product.getId() + "/images")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + adminToken)
+                  .content(objectMapper.writeValueAsString(List.of(image.getId()))))
+          .andExpect(status().isOk());
+
+      assertFalse(imageRepository.existsById(orphanImage.getId()));
+    }
   }
 
   @Test
@@ -215,412 +782,6 @@ class ProductControllerTest {
   }
 
   @Test
-  void createProduct_Successful_1() throws Exception {
-    UpdateProductRequest request =
-        createRequest(
-            "New Product",
-            5,
-            "New Description",
-            new BigDecimal("200.00"),
-            new BigDecimal("300.00"));
-
-    expectCreatedProduct(request, status().isCreated());
-  }
-
-  @Test
-  void createProduct_Successful_2() throws Exception {
-    UpdateProductRequest request =
-        createRequest(
-            "New Product",
-            5,
-            "New Description",
-            new BigDecimal("0.00"),
-            new BigDecimal("777372.00"));
-
-    expectCreatedProduct(request, status().isCreated());
-  }
-
-  @Test
-  void createProduct_verification_invalid_cost_1() throws Exception {
-    UpdateProductRequest request =
-        createRequest(
-            "New Product",
-            5,
-            "New Description",
-            new BigDecimal("-200.00"),
-            new BigDecimal("137.00"));
-
-    expectCreateBadRequest(request);
-  }
-
-  @Test
-  void createProduct_verification_invalid_cost_2() throws Exception {
-    UpdateProductRequest request =
-        createRequest(
-            "New Product",
-            5,
-            "New Description",
-            new BigDecimal("137.00"),
-            new BigDecimal("-300.00"));
-
-    expectCreateBadRequest(request);
-  }
-
-  @Test
-  void createProduct_verification_zero_wholesale_price() throws Exception {
-    UpdateProductRequest request =
-        createRequest(
-            "New Product", 5, "New Description", new BigDecimal("0.00"), new BigDecimal("300.00"));
-
-    expectCreatedProduct(request, status().isCreated());
-  }
-
-  @Test
-  void updateProduct_notExists() throws Exception {
-    UpdateProductRequest request =
-        createRequest(
-            "UPDATE PRODUCT",
-            5,
-            "New Description",
-            new BigDecimal("0.00"),
-            new BigDecimal("300.00"));
-
-    expectUpdateBadRequest(1L, request, status().isNotFound());
-  }
-
-  @Test
-  void updateProduct_successful_1() throws Exception {
-    Product product =
-        createProduct(
-            "Test Product",
-            10,
-            "Test Description",
-            new BigDecimal("100.00"),
-            new BigDecimal("150.00"));
-
-    UpdateProductRequest request =
-        createRequest(
-            "UPDATE PRODUCT",
-            5,
-            "New Description",
-            new BigDecimal("0.00"),
-            new BigDecimal("30.00"));
-
-    expectUpdatedProduct(product.getId(), request);
-  }
-
-  @Test
-  void updateProduct_successful_2() throws Exception {
-    Product product =
-        createProduct(
-            "Test Product",
-            10,
-            "Test Description",
-            new BigDecimal("100.00"),
-            new BigDecimal("150.00"));
-
-    UpdateProductRequest request =
-        createRequest(
-            "UPDATE PRODUCT",
-            4,
-            "New Description",
-            new BigDecimal("154.00"),
-            new BigDecimal("30.00"));
-
-    expectUpdatedProduct(product.getId(), request);
-  }
-
-  @Test
-  void updateProduct_successful_3() throws Exception {
-    Product product =
-        createProduct(
-            "pants gucci",
-            1,
-            "Test Description",
-            new BigDecimal("100.00"),
-            new BigDecimal("150.00"));
-
-    UpdateProductRequest request =
-        createRequest(
-            "pants versace",
-            4,
-            "New Description",
-            new BigDecimal("154.00"),
-            new BigDecimal("30.00"));
-
-    expectUpdatedProduct(product.getId(), request);
-  }
-
-  @Test
-  void updateProduct_verification_invalid_name() throws Exception {
-    Product product =
-        createProduct(
-            "Test Product",
-            10,
-            "Test Description",
-            new BigDecimal("100.00"),
-            new BigDecimal("150.00"));
-
-    UpdateProductRequest request =
-        createRequest(
-            "UPDATE PRODUCT TOO LONG NAME..",
-            5,
-            "New Description",
-            new BigDecimal("0.00"),
-            new BigDecimal("30.00"));
-
-    expectUpdateBadRequest(product.getId(), request);
-  }
-
-  @Test
-  void updateProduct_verification_invalid_cost_1() throws Exception {
-    Product product =
-        createProduct(
-            "Test Product",
-            10,
-            "Test Description",
-            new BigDecimal("100.00"),
-            new BigDecimal("150.00"));
-
-    UpdateProductRequest request =
-        createRequest(
-            "UPDATE PRODUCT TOO LONG NAME..",
-            5,
-            "New Description",
-            new BigDecimal("-30.00"),
-            new BigDecimal("30.00"));
-
-    expectUpdateBadRequest(product.getId(), request);
-  }
-
-  @Test
-  void updateProduct_verification_invalid_cost_2() throws Exception {
-    Product product =
-        createProduct(
-            "Test Product",
-            10,
-            "Test Description",
-            new BigDecimal("100.00"),
-            new BigDecimal("150.00"));
-
-    UpdateProductRequest request =
-        createRequest(
-            "UPDATE PRODUCT TOO LONG NAME..",
-            5,
-            "New Description",
-            new BigDecimal("-30.00"),
-            new BigDecimal("-30.00"));
-
-    expectUpdateBadRequest(product.getId(), request);
-  }
-
-  @Test
-  void updateProduct_verification_invalid_cost_3() throws Exception {
-    Product product =
-        createProduct(
-            "Test Product",
-            10,
-            "Test Description",
-            new BigDecimal("100.00"),
-            new BigDecimal("150.00"));
-
-    UpdateProductRequest request =
-        createRequest(
-            "UPDATE PRODUCT TOO LONG NAME..",
-            5,
-            "New Description",
-            new BigDecimal("30.00"),
-            new BigDecimal("-30.00"));
-
-    expectUpdateBadRequest(product.getId(), request);
-  }
-
-  @Test
-  void deleteProduct_successful() throws Exception {
-    Product product =
-        createProduct(
-            "Test Product",
-            10,
-            "Test Description",
-            new BigDecimal("100.00"),
-            new BigDecimal("150.00"));
-
-    expectSuccessfulProductDeletion(product.getId());
-  }
-
-  @Test
-  void deleteProduct_notFound() throws Exception {
-    expectNotFoundProductDeletion(444L);
-  }
-
-  @Test
-  @Transactional
-  void updateCategories_successful() throws Exception {
-    Product product =
-        createProduct(
-            "Test Product",
-            10,
-            "Test Description",
-            new BigDecimal("100.00"),
-            new BigDecimal("150.00"));
-
-    Category category1 = new Category();
-    category1.setName("Category 1");
-    categoryRepository.save(category1);
-
-    Category category2 = new Category();
-    category2.setName("Category 2");
-    categoryRepository.save(category2);
-
-    Category category3 = new Category();
-    category3.setName("Category 3");
-    categoryRepository.save(category3);
-
-    mockMvc
-        .perform(
-            put("/api/products/" + product.getId() + "/categories")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    objectMapper.writeValueAsString(
-                        List.of(category1.getId(), category2.getId(), category3.getId()))))
-        .andExpect(status().isOk());
-
-    Product updatedProduct =
-        productRepository.findById(product.getId()).orElseThrow(Exception::new);
-    Set<Category> categories = updatedProduct.getCategories();
-
-    assertTrue(categories.contains(category1));
-    assertTrue(categories.contains(category2));
-    assertTrue(categories.contains(category3));
-    assertEquals(3, categories.size());
-  }
-
-  @Test
-  @Transactional
-  void updateCategories_successful_1() throws Exception {
-    Product product =
-        createProduct(
-            "Test Product",
-            10,
-            "Test Description",
-            new BigDecimal("100.00"),
-            new BigDecimal("150.00"));
-
-    Category category1 = new Category();
-    category1.setName("Category 1");
-    categoryRepository.save(category1);
-
-    Category category2 = new Category();
-    category2.setName("Category 2");
-    categoryRepository.save(category2);
-
-    Category category3 = new Category();
-    category3.setName("Category 3");
-    categoryRepository.save(category3);
-
-    product.getCategories().addAll(List.of(category1, category2, category3));
-    productRepository.save(product);
-
-    mockMvc
-        .perform(
-            put("/api/products/" + product.getId() + "/categories")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    objectMapper.writeValueAsString(List.of(category1.getId(), category3.getId()))))
-        .andExpect(status().isOk());
-
-    Product updatedProduct =
-        productRepository.findById(product.getId()).orElseThrow(Exception::new);
-    Set<Category> categories = updatedProduct.getCategories();
-
-    assertTrue(categories.contains(category1));
-    assertTrue(categories.contains(category3));
-    assertEquals(2, categories.size());
-  }
-
-  @Test
-  @Transactional
-  void updateCategories_delete_all() throws Exception {
-    Product product =
-        createProduct(
-            "Test Product",
-            10,
-            "Test Description",
-            new BigDecimal("100.00"),
-            new BigDecimal("150.00"));
-
-    Category category = new Category();
-    category.setName("Category 1");
-    categoryRepository.save(category);
-
-    product.getCategories().add(category);
-    productRepository.save(product);
-
-    mockMvc
-        .perform(
-            put("/api/products/" + product.getId() + "/categories")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(List.of())))
-        .andExpect(status().isOk());
-
-    Product updatedProduct =
-        productRepository.findById(product.getId()).orElseThrow(Exception::new);
-    Set<Category> categories = updatedProduct.getCategories();
-
-    assertTrue(categories.isEmpty());
-  }
-
-  @Test
-  @Transactional
-  void updateCategories_emptyCategories() throws Exception {
-    Product product =
-        createProduct(
-            "Test Product",
-            10,
-            "Test Description",
-            new BigDecimal("100.00"),
-            new BigDecimal("150.00"));
-
-    mockMvc
-        .perform(
-            put("/api/products/" + product.getId() + "/categories")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(List.of())))
-        .andExpect(status().isOk());
-  }
-
-  @Test
-  void updateCategories_productNotFound() throws Exception {
-    mockMvc
-        .perform(
-            put("/api/products/999/categories")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(List.of(1L, 2L, 3L))))
-        .andExpect(status().isNotFound());
-  }
-
-  @Test
-  void createProduct_verification_emptyName() throws Exception {
-    UpdateProductRequest request =
-        createRequest("", 5, "New Description", new BigDecimal("200.00"), new BigDecimal("300.00"));
-
-    expectCreateBadRequest(request);
-  }
-
-  @Test
-  void createProduct_verification_negativeAvailability() throws Exception {
-    UpdateProductRequest request =
-        createRequest(
-            "New Product",
-            -5,
-            "New Description",
-            new BigDecimal("200.00"),
-            new BigDecimal("300.00"));
-
-    expectCreateBadRequest(request);
-  }
-
-  @Test
   void getProductById_checkAllFields() throws Exception {
     Product product =
         createProduct(
@@ -666,133 +827,6 @@ class ProductControllerTest {
         .andExpect(jsonPath("$[1].description").value(product2.getDescription()))
         .andExpect(jsonPath("$[1].cost.wholesalePrice").value(200.0))
         .andExpect(jsonPath("$[1].cost.retailPrice").value(250.0));
-  }
-
-  @Test
-  void deleteProduct_checkDatabase() throws Exception {
-    Product product =
-        createProduct(
-            "Test Product",
-            10,
-            "Test Description",
-            new BigDecimal("100.00"),
-            new BigDecimal("150.00"));
-
-    mockMvc.perform(delete("/api/products/" + product.getId())).andExpect(status().isNoContent());
-
-    assertFalse(productRepository.existsById(product.getId()));
-  }
-
-  @Test
-  @Transactional
-  void addImage_successful_one() throws Exception {
-    Image image = new Image();
-    image.setData("sample data".getBytes());
-    imageRepository.save(image);
-
-    Product product = new Product();
-    product.setName("test category");
-    product.setAvailability(30);
-    product.setDescription("sample description");
-    product.setCost(new Cost(BigDecimal.valueOf(130), BigDecimal.valueOf(2500)));
-    productRepository.save(product);
-
-    mockMvc
-        .perform(
-            put("/api/products/" + product.getId() + "/images")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(List.of(image.getId()))))
-        .andExpect(status().isOk());
-
-    assertEquals(1, product.getImages().size());
-  }
-
-  @Test
-  @Transactional
-  void addImage_successful_multiple() throws Exception {
-    Image image1 = new Image();
-    image1.setData("sample data first".getBytes());
-    imageRepository.save(image1);
-
-    Image image2 = new Image();
-    image2.setData("sample data second".getBytes());
-    imageRepository.save(image2);
-
-    Product product = new Product();
-    product.setName("test category");
-    product.setAvailability(30);
-    product.setDescription("sample description");
-    product.setCost(new Cost(BigDecimal.valueOf(130), BigDecimal.valueOf(2500)));
-    productRepository.save(product);
-
-    mockMvc
-        .perform(
-            put("/api/products/" + product.getId() + "/images")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(List.of(image1.getId(), image2.getId()))))
-        .andExpect(status().isOk());
-
-    assertEquals(2, product.getImages().size());
-  }
-
-  @Test
-  @Transactional
-  void addImage_not_exists_one() throws Exception {
-
-    Product product = new Product();
-    product.setName("test category");
-    product.setAvailability(30);
-    product.setDescription("sample description");
-    product.setCost(new Cost(BigDecimal.valueOf(130), BigDecimal.valueOf(2500)));
-    productRepository.save(product);
-
-    mockMvc
-        .perform(
-            put("/api/products/" + product.getId() + "/images")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(List.of(1))))
-        .andExpect(status().isNotFound());
-  }
-
-  @Test
-  @Transactional
-  void addImage_not_exists_one_and_one_exists() throws Exception {
-    Image image = new Image();
-    image.setData("sample image data".getBytes());
-
-    Product product = new Product();
-    product.setName("test category");
-    product.setAvailability(30);
-    product.setDescription("sample description");
-    product.setCost(new Cost(BigDecimal.valueOf(130), BigDecimal.valueOf(2500)));
-    product.getImages().add(image);
-    productRepository.save(product);
-
-    mockMvc
-        .perform(
-            put("/api/products/" + product.getId() + "/images")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(List.of(1, image.getId()))))
-        .andExpect(status().isNotFound());
-  }
-
-  @Test
-  @Transactional
-  void addImage_not_exists_multiple() throws Exception {
-
-    Product product = new Product();
-    product.setName("test category");
-    product.setAvailability(30);
-    product.setDescription("sample description");
-    product.setCost(new Cost(BigDecimal.valueOf(130), BigDecimal.valueOf(2500)));
-    productRepository.save(product);
-
-    mockMvc
-        .perform(
-            put("/api/products/" + product.getId() + "/images")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(List.of(1, 2, 3))))
-        .andExpect(status().isNotFound());
   }
 
   @Test
@@ -867,35 +901,5 @@ class ProductControllerTest {
 
     assertTrue(response.contains(String.valueOf(image1.getId())));
     assertTrue(response.contains(String.valueOf(image2.getId())));
-  }
-
-  @Test
-  @Transactional
-  void deleteOrphanImage_successful() throws Exception {
-    Image image = new Image();
-    image.setData("sample data first".getBytes());
-    imageRepository.save(image);
-
-    Image orphanImage = new Image();
-    orphanImage.setData("sample data second".getBytes());
-    imageRepository.save(orphanImage);
-
-    Product product = new Product();
-    product.setName("test category");
-    product.setAvailability(30);
-    product.setDescription("sample description");
-    product.setCost(new Cost(BigDecimal.valueOf(130), BigDecimal.valueOf(2500)));
-    product.getImages().add(image);
-    product.getImages().add(orphanImage);
-    productRepository.save(product);
-
-    mockMvc
-        .perform(
-            put("/api/products/" + product.getId() + "/images")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(List.of(image.getId()))))
-        .andExpect(status().isOk());
-
-    assertFalse(imageRepository.existsById(orphanImage.getId()));
   }
 }

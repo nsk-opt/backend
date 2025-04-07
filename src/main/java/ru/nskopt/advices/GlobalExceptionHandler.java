@@ -1,5 +1,6 @@
 package ru.nskopt.advices;
 
+import io.jsonwebtoken.security.SignatureException;
 import io.swagger.v3.oas.annotations.Operation;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -11,8 +12,10 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.NoHandlerFoundException;
+import ru.nskopt.exceptions.AuthenticationFailedException;
 import ru.nskopt.exceptions.ResourceNotFoundException;
 import ru.nskopt.exceptions.UnsupportedImageFormatException;
+import ru.nskopt.exceptions.UserExistsException;
 import ru.nskopt.responses.ErrorResponse;
 
 @Slf4j
@@ -77,5 +80,31 @@ public class GlobalExceptionHandler {
       UnsupportedImageFormatException e, WebRequest request) {
     log.info("Unsupported image format: {}, Request details: {}", e.getMessage(), request);
     return new ErrorResponse("Unsupported image format: " + e.getMessage());
+  }
+
+  @ResponseStatus(HttpStatus.CONFLICT)
+  @ExceptionHandler(UserExistsException.class)
+  @Operation(
+      summary = "Обработка ошибки 'Пользователь уже существует'",
+      description =
+          "Возвращает сообщение об ошибке, если пользователь с таким email уже существует.")
+  public ErrorResponse handleUserExistsException(UserExistsException e, WebRequest request) {
+    log.info("User already exists: {}, Request details: {}", e.getMessage(), request);
+    return new ErrorResponse("User with email " + e.getMessage() + " already exists");
+  }
+
+  @ResponseStatus(HttpStatus.UNAUTHORIZED)
+  @ExceptionHandler(AuthenticationFailedException.class)
+  public ErrorResponse handleAuthenticationFailedException(
+      AuthenticationFailedException e, WebRequest request) {
+    log.info("Authentication failed: {}, Request details: {}", e.getMessage(), request);
+    return new ErrorResponse("Authentication failed: " + e.getMessage());
+  }
+
+  @ResponseStatus(HttpStatus.UNAUTHORIZED)
+  @ExceptionHandler(SignatureException.class)
+  public ErrorResponse handleSignatureException(SignatureException e, WebRequest request) {
+    log.info("Jwt is invalids: {}, Request details: {}", e.getMessage(), request);
+    return new ErrorResponse("JWT is invalid: " + e.getMessage());
   }
 }

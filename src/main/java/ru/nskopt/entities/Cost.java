@@ -1,11 +1,11 @@
-package ru.nskopt.models.entities;
+package ru.nskopt.entities;
 
-import java.math.BigDecimal;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Embeddable;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
+import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

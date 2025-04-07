@@ -1,4 +1,4 @@
-package ru.nskopt.models.requests;
+package ru.nskopt.entities.requests;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;

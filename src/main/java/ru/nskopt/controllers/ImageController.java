@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +26,7 @@ public class ImageController {
   private final ImageService imageService;
 
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
   @Operation(
       summary = "Загрузить изображение",
       description = "Загружает изображение и возвращает его ID.")
@@ -35,6 +37,7 @@ public class ImageController {
       throws IOException {
 
     String contentType = file.getContentType();
+
     if (contentType == null
         || (!contentType.equals(MediaType.IMAGE_PNG_VALUE)
             && !contentType.equals(MediaType.IMAGE_JPEG_VALUE)

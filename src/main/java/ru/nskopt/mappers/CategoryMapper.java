@@ -2,8 +2,8 @@ package ru.nskopt.mappers;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import ru.nskopt.models.entities.Category;
-import ru.nskopt.models.requests.UpdateCategoryRequest;
+import ru.nskopt.entities.Category;
+import ru.nskopt.entities.requests.UpdateCategoryRequest;
 
 @Component
 @RequiredArgsConstructor

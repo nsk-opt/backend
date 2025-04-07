@@ -1,4 +1,4 @@
-package ru.nskopt.models.entities;
+package ru.nskopt.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.CascadeType;
@@ -20,6 +20,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import ru.nskopt.entities.image.Image;
 
 @Entity
 @Table(name = "products")

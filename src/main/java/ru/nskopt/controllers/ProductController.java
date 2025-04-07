@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,8 +18,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import ru.nskopt.models.entities.Product;
-import ru.nskopt.models.requests.UpdateProductRequest;
+import ru.nskopt.entities.Product;
+import ru.nskopt.entities.requests.UpdateProductRequest;
 import ru.nskopt.services.ProductService;
 
 @RestController
@@ -48,6 +49,7 @@ public class ProductController {
   }
 
   @PostMapping
+  @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
   @ResponseStatus(HttpStatus.CREATED)
   @Operation(
       summary = "Создать новый товар",
@@ -57,6 +59,7 @@ public class ProductController {
   }
 
   @PutMapping("/{id}")
+  @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
   @Operation(
       summary = "Обновить товар по ID",
       description = "Обновляет данные товара по его уникальному идентификатору.")
@@ -67,6 +70,7 @@ public class ProductController {
   }
 
   @DeleteMapping("/{id}")
+  @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @Operation(
       summary = "Удалить товар по ID",
@@ -77,6 +81,7 @@ public class ProductController {
   }
 
   @PutMapping("/{productId}/categories")
+  @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
   @ResponseStatus(HttpStatus.OK)
   @Operation(
       summary = "Обновить категории для товара",
@@ -88,6 +93,7 @@ public class ProductController {
   }
 
   @PutMapping("/{productId}/images")
+  @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
   @ResponseStatus(HttpStatus.OK)
   @Operation(
       summary = "Обновить изображения товара",

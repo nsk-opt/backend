@@ -7,7 +7,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.validation.annotation.Validated;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,14 +17,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import ru.nskopt.models.entities.Category;
-import ru.nskopt.models.requests.UpdateCategoryRequest;
+import ru.nskopt.entities.Category;
+import ru.nskopt.entities.requests.UpdateCategoryRequest;
 import ru.nskopt.services.CategoryService;
 
 @RestController
 @RequestMapping("/api/categories")
 @RequiredArgsConstructor
-@Validated
 @Tag(name = "Category Controller", description = "Управление категориями товаров")
 public class CategoryController {
 
@@ -48,6 +47,7 @@ public class CategoryController {
   }
 
   @PostMapping
+  @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
   @ResponseStatus(HttpStatus.CREATED)
   @Operation(
       summary = "Создать новую категорию",
@@ -60,6 +60,7 @@ public class CategoryController {
   @Operation(
       summary = "Обновить категорию по ID",
       description = "Обновляет данные категории по её уникальному идентификатору.")
+  @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
   public Category updateCategory(
       @Parameter(description = "ID категории", example = "1") @PathVariable Long id,
       @Valid @RequestBody UpdateCategoryRequest updateCategoryRequest) {
@@ -71,6 +72,7 @@ public class CategoryController {
   @Operation(
       summary = "Удалить категорию по ID",
       description = "Удаляет категорию по её уникальному идентификатору.")
+  @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
   public void deleteCategory(
       @Parameter(description = "ID категории", example = "1") @PathVariable Long id) {
     categoryService.deleteById(id);
@@ -81,6 +83,7 @@ public class CategoryController {
   @Operation(
       summary = "Обновить изображения категории",
       description = "Обновляет список изображений, связанных с категорией.")
+  @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
   public void updateImages(
       @Parameter(description = "ID категории", example = "1") @PathVariable Long categoryId,
       @RequestBody List<Long> imageIds) {

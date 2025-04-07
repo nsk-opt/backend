@@ -7,12 +7,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.nskopt.entities.Category;
+import ru.nskopt.entities.Product;
+import ru.nskopt.entities.image.Image;
+import ru.nskopt.entities.requests.UpdateProductRequest;
 import ru.nskopt.exceptions.ResourceNotFoundException;
 import ru.nskopt.mappers.Mapper;
-import ru.nskopt.models.entities.Category;
-import ru.nskopt.models.entities.Image;
-import ru.nskopt.models.entities.Product;
-import ru.nskopt.models.requests.UpdateProductRequest;
 import ru.nskopt.repositories.ProductRepository;
 
 @Slf4j
@@ -30,7 +30,9 @@ public class ProductService {
   }
 
   public Product findById(Long id) {
-    return productRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(id));
+    return productRepository
+        .findById(id)
+        .orElseThrow(() -> new ResourceNotFoundException("Product not found " + id));
   }
 
   public Product save(UpdateProductRequest updateProductRequest) {
@@ -46,7 +48,8 @@ public class ProductService {
   }
 
   public void deleteById(Long id) {
-    if (!productRepository.existsById(id)) throw new ResourceNotFoundException(id);
+    if (!productRepository.existsById(id))
+      throw new ResourceNotFoundException("Product not found " + id);
     log.info("Delete product with id {}", id);
     productRepository.deleteById(id);
   }

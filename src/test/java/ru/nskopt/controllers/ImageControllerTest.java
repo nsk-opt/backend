@@ -1,5 +1,6 @@
 package ru.nskopt.controllers;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -7,129 +8,412 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.io.File;
 import java.nio.file.Files;
-import java.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.nskopt.App;
-import ru.nskopt.models.entities.Image;
+import ru.nskopt.entities.image.Image;
+import ru.nskopt.entities.user.Role;
+import ru.nskopt.entities.user.User;
 import ru.nskopt.repositories.ImageRepository;
+import ru.nskopt.repositories.UserRepository;
+import ru.nskopt.utils.JwtUtils;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, classes = App.class)
 @AutoConfigureMockMvc
 class ImageControllerTest {
 
-  @Autowired private MockMvc mockMvc;
+  @Autowired MockMvc mockMvc;
+  @Autowired PasswordEncoder passwordEncoder;
+  @Autowired JwtUtils jwtUtils;
 
-  @Autowired private ImageRepository imageRepository;
+  @Autowired ImageRepository imageRepository;
+  @Autowired UserRepository userRepository;
+
+  User admin;
+  String adminToken;
+
+  User manager;
+  String managerToken;
+
+  User user;
+  String userToken;
+
+  void createAdmin() {
+    User user = new User();
+    user.setUsername("username123213");
+    user.setPassword(passwordEncoder.encode("footerNeck8273te"));
+    user.setRole(Role.ROLE_ADMIN);
+
+    admin = userRepository.save(user);
+    adminToken = jwtUtils.generateToken(user);
+  }
+
+  void createManager() {
+    User user = new User();
+    user.setUsername("manager123896192836");
+    user.setPassword(passwordEncoder.encode("footer322Neck8273te"));
+    user.setRole(Role.ROLE_ADMIN);
+
+    manager = userRepository.save(user);
+    managerToken = jwtUtils.generateToken(user);
+  }
+
+  void createUser() {
+    User user = new User();
+    user.setUsername("user123896192836");
+    user.setPassword(passwordEncoder.encode("footer322Neck8273te"));
+    user.setRole(Role.ROLE_USER);
+
+    this.user = userRepository.save(user);
+    this.userToken = jwtUtils.generateToken(user);
+  }
 
   @BeforeEach
   void beforeEach() {
     imageRepository.deleteAll();
+    userRepository.deleteAll();
+    createAdmin();
+    createManager();
+    createUser();
   }
 
-  @Test
-  void createImage_successful_jpg() throws Exception {
-    String filePath = "src/test/resources/images/image.jpg";
-    File file = new File(filePath);
+  @Nested
+  @DisplayName("/api/images -- Admin access test")
+  class AdminAccessTest {
+    @Test
+    void createImage_successful_jpg() throws Exception {
+      String filePath = "src/test/resources/images/image.jpg";
+      File file = new File(filePath);
 
-    byte[] fileContent = Files.readAllBytes(file.toPath());
+      byte[] fileContent = Files.readAllBytes(file.toPath());
 
-    MockMultipartFile multipartFile =
-        new MockMultipartFile("file", file.getName(), MediaType.IMAGE_JPEG_VALUE, fileContent);
+      MockMultipartFile multipartFile =
+          new MockMultipartFile("file", file.getName(), MediaType.IMAGE_JPEG_VALUE, fileContent);
 
-    String responseContent =
-        mockMvc
-            .perform(multipart("/api/images").file(multipartFile))
-            .andExpect(status().isOk())
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
+      String responseContent =
+          mockMvc
+              .perform(
+                  multipart("/api/images")
+                      .file(multipartFile)
+                      .header("Authorization", "Bearer " + adminToken))
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
 
-    Long imageId = Long.parseLong(responseContent);
+      Long imageId = Long.parseLong(responseContent);
 
-    assertTrue(imageRepository.findById(imageId).isPresent());
+      assertTrue(imageRepository.findById(imageId).isPresent());
+    }
+
+    @Test
+    void createImage_successful_png() throws Exception {
+      String filePath = "src/test/resources/images/image.png";
+      File file = new File(filePath);
+
+      byte[] fileContent = Files.readAllBytes(file.toPath());
+
+      MockMultipartFile multipartFile =
+          new MockMultipartFile("file", file.getName(), MediaType.IMAGE_PNG_VALUE, fileContent);
+
+      String responseContent =
+          mockMvc
+              .perform(
+                  multipart("/api/images")
+                      .file(multipartFile)
+                      .header("Authorization", "Bearer " + adminToken))
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      Long imageId = Long.parseLong(responseContent);
+
+      assertTrue(imageRepository.findById(imageId).isPresent());
+    }
+
+    @Test
+    void createImage_successful_webp() throws Exception {
+      String filePath = "src/test/resources/images/image.webp";
+      File file = new File(filePath);
+
+      byte[] fileContent = Files.readAllBytes(file.toPath());
+
+      MockMultipartFile multipartFile =
+          new MockMultipartFile("file", file.getName(), "image/webp", fileContent);
+
+      String responseContent =
+          mockMvc
+              .perform(
+                  multipart("/api/images")
+                      .file(multipartFile)
+                      .header("Authorization", "Bearer " + adminToken))
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      Long imageId = Long.parseLong(responseContent);
+
+      assertTrue(imageRepository.findById(imageId).isPresent());
+    }
+
+    @Test
+    void createImage_unsupported_format() throws Exception {
+      String filePath = "src/test/resources/images/image.gif";
+      File file = new File(filePath);
+
+      byte[] fileContent = Files.readAllBytes(file.toPath());
+
+      MockMultipartFile multipartFile =
+          new MockMultipartFile("file", file.getName(), "image/gif", fileContent);
+
+      mockMvc
+          .perform(
+              multipart("/api/images")
+                  .file(multipartFile)
+                  .header("Authorization", "Bearer " + adminToken))
+          .andExpect(status().isUnsupportedMediaType());
+    }
+
+    @Test
+    void createImage_unsupported_format_null_content_type() throws Exception {
+      String filePath = "src/test/resources/images/image.gif";
+      File file = new File(filePath);
+
+      byte[] fileContent = Files.readAllBytes(file.toPath());
+
+      MockMultipartFile multipartFile =
+          new MockMultipartFile("file", file.getName(), null, fileContent);
+
+      mockMvc
+          .perform(
+              multipart("/api/images")
+                  .file(multipartFile)
+                  .header("Authorization", "Bearer " + adminToken))
+          .andExpect(status().isUnsupportedMediaType());
+    }
   }
 
-  @Test
-  void createImage_successful_png() throws Exception {
-    String filePath = "src/test/resources/images/image.png";
-    File file = new File(filePath);
+  @Nested
+  @DisplayName("/api/images -- Manager access test")
+  class ManagerAccessTest {
+    @Test
+    void createImage_successful_jpg() throws Exception {
+      String filePath = "src/test/resources/images/image.jpg";
+      File file = new File(filePath);
 
-    byte[] fileContent = Files.readAllBytes(file.toPath());
+      byte[] fileContent = Files.readAllBytes(file.toPath());
 
-    MockMultipartFile multipartFile =
-        new MockMultipartFile("file", file.getName(), MediaType.IMAGE_PNG_VALUE, fileContent);
+      MockMultipartFile multipartFile =
+          new MockMultipartFile("file", file.getName(), MediaType.IMAGE_JPEG_VALUE, fileContent);
 
-    String responseContent =
-        mockMvc
-            .perform(multipart("/api/images").file(multipartFile))
-            .andExpect(status().isOk())
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
+      String responseContent =
+          mockMvc
+              .perform(
+                  multipart("/api/images")
+                      .file(multipartFile)
+                      .header("Authorization", "Bearer " + managerToken))
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
 
-    Long imageId = Long.parseLong(responseContent);
+      Long imageId = Long.parseLong(responseContent);
 
-    assertTrue(imageRepository.findById(imageId).isPresent());
+      assertTrue(imageRepository.findById(imageId).isPresent());
+    }
+
+    @Test
+    void createImage_successful_png() throws Exception {
+      String filePath = "src/test/resources/images/image.png";
+      File file = new File(filePath);
+
+      byte[] fileContent = Files.readAllBytes(file.toPath());
+
+      MockMultipartFile multipartFile =
+          new MockMultipartFile("file", file.getName(), MediaType.IMAGE_PNG_VALUE, fileContent);
+
+      String responseContent =
+          mockMvc
+              .perform(
+                  multipart("/api/images")
+                      .file(multipartFile)
+                      .header("Authorization", "Bearer " + managerToken))
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      Long imageId = Long.parseLong(responseContent);
+
+      assertTrue(imageRepository.findById(imageId).isPresent());
+    }
+
+    @Test
+    void createImage_successful_webp() throws Exception {
+      String filePath = "src/test/resources/images/image.webp";
+      File file = new File(filePath);
+
+      byte[] fileContent = Files.readAllBytes(file.toPath());
+
+      MockMultipartFile multipartFile =
+          new MockMultipartFile("file", file.getName(), "image/webp", fileContent);
+
+      String responseContent =
+          mockMvc
+              .perform(
+                  multipart("/api/images")
+                      .file(multipartFile)
+                      .header("Authorization", "Bearer " + managerToken))
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      Long imageId = Long.parseLong(responseContent);
+
+      assertTrue(imageRepository.findById(imageId).isPresent());
+    }
+
+    @Test
+    void createImage_unsupported_format() throws Exception {
+      String filePath = "src/test/resources/images/image.gif";
+      File file = new File(filePath);
+
+      byte[] fileContent = Files.readAllBytes(file.toPath());
+
+      MockMultipartFile multipartFile =
+          new MockMultipartFile("file", file.getName(), "image/gif", fileContent);
+
+      mockMvc
+          .perform(
+              multipart("/api/images")
+                  .file(multipartFile)
+                  .header("Authorization", "Bearer " + managerToken))
+          .andExpect(status().isUnsupportedMediaType());
+    }
+
+    @Test
+    void createImage_unsupported_format_null_content_type() throws Exception {
+      String filePath = "src/test/resources/images/image.gif";
+      File file = new File(filePath);
+
+      byte[] fileContent = Files.readAllBytes(file.toPath());
+
+      MockMultipartFile multipartFile =
+          new MockMultipartFile("file", file.getName(), null, fileContent);
+
+      mockMvc
+          .perform(
+              multipart("/api/images")
+                  .file(multipartFile)
+                  .header("Authorization", "Bearer " + managerToken))
+          .andExpect(status().isUnsupportedMediaType());
+    }
   }
 
-  @Test
-  void createImage_successful_webp() throws Exception {
-    String filePath = "src/test/resources/images/image.webp";
-    File file = new File(filePath);
+  @Nested
+  @DisplayName("/api/images -- User access test")
+  class UserAccessTest {
+    @Test
+    void createImage_successful_jpg() throws Exception {
+      String filePath = "src/test/resources/images/image.jpg";
+      File file = new File(filePath);
 
-    byte[] fileContent = Files.readAllBytes(file.toPath());
+      byte[] fileContent = Files.readAllBytes(file.toPath());
 
-    MockMultipartFile multipartFile =
-        new MockMultipartFile("file", file.getName(), "image/webp", fileContent);
+      MockMultipartFile multipartFile =
+          new MockMultipartFile("file", file.getName(), MediaType.IMAGE_JPEG_VALUE, fileContent);
 
-    String responseContent =
-        mockMvc
-            .perform(multipart("/api/images").file(multipartFile))
-            .andExpect(status().isOk())
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
+      mockMvc
+          .perform(
+              multipart("/api/images")
+                  .file(multipartFile)
+                  .header("Authorization", "Bearer " + userToken))
+          .andExpect(status().isForbidden());
+    }
 
-    Long imageId = Long.parseLong(responseContent);
+    @Test
+    void createImage_successful_png() throws Exception {
+      String filePath = "src/test/resources/images/image.png";
+      File file = new File(filePath);
 
-    assertTrue(imageRepository.findById(imageId).isPresent());
-  }
+      byte[] fileContent = Files.readAllBytes(file.toPath());
 
-  @Test
-  void createImage_unsupported_format() throws Exception {
-    String filePath = "src/test/resources/images/image.gif";
-    File file = new File(filePath);
+      MockMultipartFile multipartFile =
+          new MockMultipartFile("file", file.getName(), MediaType.IMAGE_PNG_VALUE, fileContent);
 
-    byte[] fileContent = Files.readAllBytes(file.toPath());
+      mockMvc
+          .perform(
+              multipart("/api/images")
+                  .file(multipartFile)
+                  .header("Authorization", "Bearer " + userToken))
+          .andExpect(status().isForbidden());
+    }
 
-    MockMultipartFile multipartFile =
-        new MockMultipartFile("file", file.getName(), "image/gif", fileContent);
+    @Test
+    void createImage_successful_webp() throws Exception {
+      String filePath = "src/test/resources/images/image.webp";
+      File file = new File(filePath);
 
-    mockMvc
-        .perform(multipart("/api/images").file(multipartFile))
-        .andExpect(status().isUnsupportedMediaType());
-  }
+      byte[] fileContent = Files.readAllBytes(file.toPath());
 
-  @Test
-  void createImage_unsupported_format_null_content_type() throws Exception {
-    String filePath = "src/test/resources/images/image.gif";
-    File file = new File(filePath);
+      MockMultipartFile multipartFile =
+          new MockMultipartFile("file", file.getName(), "image/webp", fileContent);
 
-    byte[] fileContent = Files.readAllBytes(file.toPath());
+      mockMvc
+          .perform(
+              multipart("/api/images")
+                  .file(multipartFile)
+                  .header("Authorization", "Bearer " + userToken))
+          .andExpect(status().isForbidden());
+    }
 
-    MockMultipartFile multipartFile =
-        new MockMultipartFile("file", file.getName(), null, fileContent);
+    @Test
+    void createImage_unsupported_format() throws Exception {
+      String filePath = "src/test/resources/images/image.gif";
+      File file = new File(filePath);
 
-    mockMvc
-        .perform(multipart("/api/images").file(multipartFile))
-        .andExpect(status().isUnsupportedMediaType());
+      byte[] fileContent = Files.readAllBytes(file.toPath());
+
+      MockMultipartFile multipartFile =
+          new MockMultipartFile("file", file.getName(), "image/gif", fileContent);
+
+      mockMvc
+          .perform(
+              multipart("/api/images")
+                  .file(multipartFile)
+                  .header("Authorization", "Bearer " + userToken))
+          .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void createImage_unsupported_format_null_content_type() throws Exception {
+      String filePath = "src/test/resources/images/image.gif";
+      File file = new File(filePath);
+
+      byte[] fileContent = Files.readAllBytes(file.toPath());
+
+      MockMultipartFile multipartFile =
+          new MockMultipartFile("file", file.getName(), null, fileContent);
+
+      mockMvc
+          .perform(
+              multipart("/api/images")
+                  .file(multipartFile)
+                  .header("Authorization", "Bearer " + userToken))
+          .andExpect(status().isForbidden());
+    }
   }
 
   @Test
@@ -147,7 +431,7 @@ class ImageControllerTest {
             .getResponse()
             .getContentAsByteArray();
 
-    assertTrue(Arrays.equals(result, image.getData()));
+    assertArrayEquals(result, image.getData());
   }
 
   @Test

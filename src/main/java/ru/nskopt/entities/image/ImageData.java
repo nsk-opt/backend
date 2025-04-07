@@ -1,4 +1,4 @@
-package ru.nskopt.models.entities;
+package ru.nskopt.entities.image;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
