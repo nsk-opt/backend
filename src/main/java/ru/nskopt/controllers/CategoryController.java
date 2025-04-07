@@ -99,4 +99,9 @@ public class CategoryController {
       @Parameter(description = "ID категории", example = "1") @PathVariable Long categoryId) {
     return categoryService.getImagesIds(categoryId);
   }
+
+  @GetMapping("/{categoryId}/products")
+  public List<Long> getProductsIdByCategoryId(@PathVariable Long categoryId) {
+    return categoryService.getProductsIds(categoryId);
+  }
 }

@@ -11,6 +11,7 @@ import ru.nskopt.entities.requests.UpdateCategoryRequest;
 import ru.nskopt.exceptions.ResourceNotFoundException;
 import ru.nskopt.mappers.Mapper;
 import ru.nskopt.repositories.CategoryRepository;
+import ru.nskopt.repositories.ProductRepository;
 
 @Slf4j
 @Service
@@ -18,6 +19,7 @@ import ru.nskopt.repositories.CategoryRepository;
 public class CategoryService {
 
   private final CategoryRepository categoryRepository;
+  private final ProductRepository productRepository;
   private final ImageService imageService;
   private final Mapper<Category, UpdateCategoryRequest> categoryMapper;
 
@@ -73,5 +75,9 @@ public class CategoryService {
     Category category = findById(productId);
 
     return category.getImages().stream().map(Image::getId).toList();
+  }
+
+  public List<Long> getProductsIds(Long categoryId) {
+    return productRepository.findAllProductsIdByCategoryId(categoryId);
   }
 }

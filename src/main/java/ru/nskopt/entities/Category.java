@@ -32,6 +32,6 @@ public class Category {
   @JsonIgnore
   @ToString.Exclude
   @EqualsAndHashCode.Exclude
-  @ManyToMany(mappedBy = "categories")
+  @ManyToMany(mappedBy = "categories", cascade = CascadeType.ALL)
   private Set<Product> products = new HashSet<>();
 }

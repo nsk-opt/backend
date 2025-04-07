@@ -15,7 +15,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -28,6 +31,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.nskopt.App;
 import ru.nskopt.entities.Category;
+import ru.nskopt.entities.Cost;
+import ru.nskopt.entities.Product;
 import ru.nskopt.entities.image.Image;
 import ru.nskopt.entities.requests.UpdateCategoryRequest;
 import ru.nskopt.entities.user.Role;
@@ -35,6 +40,7 @@ import ru.nskopt.entities.user.User;
 import ru.nskopt.mappers.CategoryMapper;
 import ru.nskopt.repositories.CategoryRepository;
 import ru.nskopt.repositories.ImageRepository;
+import ru.nskopt.repositories.ProductRepository;
 import ru.nskopt.repositories.UserRepository;
 import ru.nskopt.utils.JwtUtils;
 
@@ -63,8 +69,11 @@ class CategoryControllerTest {
   User user;
   String userToken;
 
+  @Autowired private ProductRepository productRepository;
+
   void refillDb() {
     categoryRepository.deleteAll();
+    //    productRepository
     userRepository.deleteAll();
 
     existsCategory = new Category();
@@ -1028,6 +1037,43 @@ class CategoryControllerTest {
 
       assertTrue(imageRepository.existsById(orphanImage.getId()));
     }
+  }
+
+  @Test
+  void getProductsIdsByCategoryIdTest() throws Exception {
+    Category category = new Category();
+    category.setName("Свитшоты");
+    category = categoryRepository.save(category);
+
+    Product product = new Product();
+    product.setName("Свиншот n1");
+    product.setCategories(Set.of(category));
+    product.setAvailability(30);
+    product.setDescription("Описание свиншота n1");
+    product.setCost(new Cost(BigDecimal.valueOf(300), BigDecimal.valueOf(900)));
+
+    Product product2 = new Product();
+    product2.setName("Свиншот n2");
+    product2.setCategories(Set.of(category));
+    product2.setAvailability(30);
+    product2.setDescription("Описание свиншота n2");
+    product2.setCost(new Cost(BigDecimal.valueOf(300), BigDecimal.valueOf(900)));
+
+    product = productRepository.save(product);
+    product2 = productRepository.save(product2);
+
+    category.setProducts(Set.of(product, product2));
+    categoryRepository.save(category);
+
+    mvc.perform(get("/api/categories/" + category.getId() + "/products"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$").isArray())
+        .andExpect(jsonPath("$.length()").value(2))
+        .andExpect(
+            jsonPath(
+                "$",
+                Matchers.containsInAnyOrder(
+                    product.getId().intValue(), product2.getId().intValue())));
   }
 
   @Test
