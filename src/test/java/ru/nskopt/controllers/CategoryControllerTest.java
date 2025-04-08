@@ -70,6 +70,7 @@ class CategoryControllerTest {
   String userToken;
 
   @Autowired private ProductRepository productRepository;
+  Image existsImage;
 
   void refillDb() {
     categoryRepository.deleteAll();
@@ -78,6 +79,10 @@ class CategoryControllerTest {
 
     existsCategory = new Category();
     existsCategory.setName("Pants");
+    Image image = new Image();
+    image.setData("sample data".getBytes());
+    existsImage = imageRepository.save(image);
+    existsCategory.setImages(Set.of(image));
 
     categoryRepository.save(existsCategory);
   }
@@ -1082,7 +1087,8 @@ class CategoryControllerTest {
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$[0].id").value(existsCategory.getId()))
-        .andExpect(jsonPath("$[0].name").value(existsCategory.getName()));
+        .andExpect(jsonPath("$[0].name").value(existsCategory.getName()))
+        .andExpect(jsonPath("$[0].images[0]").value(existsImage.getId()));
   }
 
   @Test
