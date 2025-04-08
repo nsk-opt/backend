@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import ru.nskopt.dto.category.CategoryUpdateRequest;
 import ru.nskopt.dto.category.CategoryUserResponse;
+import ru.nskopt.dto.product.ProductUserResponse;
 import ru.nskopt.services.CategoryService;
 
 @RestController
@@ -102,7 +103,7 @@ public class CategoryController {
   }
 
   @GetMapping("/{categoryId}/products")
-  public List<Long> getProductsIdByCategoryId(@PathVariable Long categoryId) {
-    return categoryService.getProductsIds(categoryId);
+  public List<ProductUserResponse> getProductsIdByCategoryId(@PathVariable Long categoryId) {
+    return categoryService.getProductsByCategoryId(categoryId);
   }
 }

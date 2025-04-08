@@ -7,10 +7,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.nskopt.dto.category.CategoryUpdateRequest;
 import ru.nskopt.dto.category.CategoryUserResponse;
+import ru.nskopt.dto.product.ProductUserResponse;
 import ru.nskopt.entities.Category;
 import ru.nskopt.entities.image.Image;
 import ru.nskopt.exceptions.ResourceNotFoundException;
 import ru.nskopt.mappers.CategoryMapper;
+import ru.nskopt.mappers.ProductMapper;
 import ru.nskopt.repositories.CategoryRepository;
 import ru.nskopt.repositories.ProductRepository;
 
@@ -18,6 +20,8 @@ import ru.nskopt.repositories.ProductRepository;
 @Service
 @RequiredArgsConstructor
 public class CategoryService {
+
+  private final ProductMapper productMapper;
 
   private final CategoryRepository categoryRepository;
   private final ProductRepository productRepository;
@@ -91,7 +95,7 @@ public class CategoryService {
     return category.getImages().stream().map(Image::getId).toList();
   }
 
-  public List<Long> getProductsIds(Long categoryId) {
-    return productRepository.findAllProductsIdByCategoryId(categoryId);
+  public List<ProductUserResponse> getProductsByCategoryId(Long categoryId) {
+    return productRepository.findAllProductsIdByCategoryId(categoryId).stream().map(productMapper::toUserResponse).toList();
   }
 }

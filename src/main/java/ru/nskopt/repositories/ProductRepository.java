@@ -8,6 +8,6 @@ import ru.nskopt.entities.Product;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
-  @Query("SELECT p.id FROM Product p " + "JOIN p.categories c " + "WHERE c.id = :categoryId")
-  List<Long> findAllProductsIdByCategoryId(Long categoryId);
+  @Query("SELECT p FROM Product p " + "JOIN p.categories c " + "WHERE c.id = :categoryId")
+  List<Product> findAllProductsIdByCategoryId(Long categoryId);
 }

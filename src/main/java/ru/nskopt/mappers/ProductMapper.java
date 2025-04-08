@@ -22,5 +22,5 @@ public interface ProductMapper {
   default Long[] mapImages(Set<Image> images) {
     return images.stream().map(Image::getId).toArray(Long[]::new);
   }
-  
+
 }
