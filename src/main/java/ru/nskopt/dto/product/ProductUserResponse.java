@@ -12,6 +12,7 @@ public class ProductUserResponse {
   private Long id;
   private String name;
   private String description;
+  private Long[] images;
 
   private BigDecimal price;
   private Long availability;

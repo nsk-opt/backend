@@ -63,6 +63,7 @@ public class ProductService {
     productRepository.deleteById(id);
   }
 
+  @Transactional
   public void updateCategories(Long productId, List<Long> categoryIds) {
     Product product =
         productRepository
