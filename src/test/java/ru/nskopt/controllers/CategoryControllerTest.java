@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.hamcrest.Matchers;
@@ -46,6 +47,7 @@ import ru.nskopt.utils.JwtUtils;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, classes = App.class)
 @AutoConfigureMockMvc
+@Transactional
 class CategoryControllerTest {
 
   @Autowired MockMvc mvc;
@@ -74,13 +76,14 @@ class CategoryControllerTest {
 
   void refillDb() {
     categoryRepository.deleteAll();
-    //    productRepository
     userRepository.deleteAll();
+
+    Image image = new Image();
+    image.setData("sample data".getBytes());
+    image = imageRepository.save(image);
 
     existsCategory = new Category();
     existsCategory.setName("Pants");
-    Image image = new Image();
-    image.setData("sample data".getBytes());
     existsImage = imageRepository.save(image);
     existsCategory.setImages(Set.of(image));
 
@@ -1045,21 +1048,24 @@ class CategoryControllerTest {
   }
 
   @Test
+  @Transactional
   void getProductsIdsByCategoryIdTest() throws Exception {
+    // Создаем и сохраняем категорию
     Category category = new Category();
     category.setName("Свитшоты");
     category = categoryRepository.save(category);
 
+    // Создаем продукты с изменяемым Set для категорий
     Product product = new Product();
     product.setName("Свиншот n1");
-    product.setCategories(Set.of(category));
+    product.setCategories(new HashSet<>(Set.of(category))); // Используем изменяемый HashSet
     product.setAvailability(30);
     product.setDescription("Описание свиншота n1");
     product.setCost(new Cost(BigDecimal.valueOf(300), BigDecimal.valueOf(900)));
 
     Product product2 = new Product();
     product2.setName("Свиншот n2");
-    product2.setCategories(Set.of(category));
+    product2.setCategories(new HashSet<>(Set.of(category)));
     product2.setAvailability(30);
     product2.setDescription("Описание свиншота n2");
     product2.setCost(new Cost(BigDecimal.valueOf(300), BigDecimal.valueOf(900)));
@@ -1067,8 +1073,8 @@ class CategoryControllerTest {
     product = productRepository.save(product);
     product2 = productRepository.save(product2);
 
-    category.setProducts(Set.of(product, product2));
-    categoryRepository.save(category);
+    category.setProducts(new HashSet<>(Set.of(product, product2)));
+    category = categoryRepository.save(category);
 
     mvc.perform(get("/api/categories/" + category.getId() + "/products"))
         .andExpect(status().isOk())
