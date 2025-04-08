@@ -95,6 +95,7 @@ public class CategoryService {
     return category.getImages().stream().map(Image::getId).toList();
   }
 
+  @Transactional
   public List<ProductUserResponse> getProductsByCategoryId(Long categoryId) {
     return productRepository.findAllProductsIdByCategoryId(categoryId).stream().map(productMapper::toUserResponse).toList();
   }
