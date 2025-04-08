@@ -43,8 +43,8 @@ public class SecurityConfig {
         .exceptionHandling(
             exceptionHandling ->
                 exceptionHandling.authenticationEntryPoint(customAuthenticationEntryPoint))
-        .csrf(CsrfConfigurer::disable)
-        .cors(cors -> cors.configure(http));
+        .csrf(CsrfConfigurer::disable);
+//        .cors(cors -> cors.configure(http));
 
     http.headers(Customizer.withDefaults());
     return http.build();
