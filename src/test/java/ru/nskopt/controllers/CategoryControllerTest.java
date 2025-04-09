@@ -19,7 +19,6 @@ import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -1050,15 +1049,13 @@ class CategoryControllerTest {
   @Test
   @Transactional
   void getProductsIdsByCategoryIdTest() throws Exception {
-    // Создаем и сохраняем категорию
     Category category = new Category();
     category.setName("Свитшоты");
     category = categoryRepository.save(category);
 
-    // Создаем продукты с изменяемым Set для категорий
     Product product = new Product();
     product.setName("Свиншот n1");
-    product.setCategories(new HashSet<>(Set.of(category))); // Используем изменяемый HashSet
+    product.setCategories(new HashSet<>(Set.of(category)));
     product.setAvailability(30);
     product.setDescription("Описание свиншота n1");
     product.setCost(new Cost(BigDecimal.valueOf(300), BigDecimal.valueOf(900)));
@@ -1080,11 +1077,8 @@ class CategoryControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$").isArray())
         .andExpect(jsonPath("$.length()").value(2))
-        .andExpect(
-            jsonPath(
-                "$",
-                Matchers.containsInAnyOrder(
-                    product.getId().intValue(), product2.getId().intValue())));
+        .andExpect(jsonPath("$[0].id").value(product.getId()))
+        .andExpect(jsonPath("$[1].id").value(product2.getId()));
   }
 
   @Test
@@ -1094,7 +1088,7 @@ class CategoryControllerTest {
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$[0].id").value(existsCategory.getId()))
         .andExpect(jsonPath("$[0].name").value(existsCategory.getName()))
-        .andExpect(jsonPath("$[0].images[0]").value(existsImage.getId()));
+        .andExpect(jsonPath("$[0].imagesIds[0]").value(existsImage.getId()));
   }
 
   @Test

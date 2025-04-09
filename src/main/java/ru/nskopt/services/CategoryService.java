@@ -97,6 +97,8 @@ public class CategoryService {
 
   @Transactional
   public List<ProductUserResponse> getProductsByCategoryId(Long categoryId) {
-    return productRepository.findAllProductsIdByCategoryId(categoryId).stream().map(productMapper::toUserResponse).toList();
+    return productRepository.findAllProductsIdByCategoryId(categoryId).stream()
+        .map(productMapper::toUserResponse)
+        .toList();
   }
 }

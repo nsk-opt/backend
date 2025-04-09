@@ -14,7 +14,7 @@ public interface CategoryMapper {
 
   Category toCategory(CategoryUpdateRequest request);
 
-  @Mapping(target = "images", source = "images")
+  @Mapping(target = "imagesIds", source = "images")
   CategoryUserResponse toUserResponse(Category category);
 
   void updateCategoryFromRequest(CategoryUpdateRequest request, @MappingTarget Category category);

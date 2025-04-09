@@ -3,6 +3,7 @@ package ru.nskopt.controllers;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,4 +30,12 @@ public class AuthController {
   public UserAuthResponse login(@Valid @RequestBody UserAuthRequest request) {
     return authService.authenticate(request);
   }
+
+  @PostMapping("/check-admin")
+  @PreAuthorize("hasAnyRole('ADMIN')")
+  public void checkAdmin() {}
+
+  @PostMapping("/check-manager")
+  @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+  public void checkManager() {}
 }

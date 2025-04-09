@@ -44,6 +44,71 @@ class AuthControllerIntegrationTest {
     userRepository.deleteAll();
   }
 
+  User createUserWithRole(Role role) {
+    User user = new User();
+    user.setUsername("username");
+    user.setPassword("password");
+    user.setRole(role);
+
+    return userRepository.save(user);
+  }
+
+  @Nested
+  @DisplayName("/api/auth/check-{admin, manager}")
+  class CheckAuthoritiesTests {
+    @Test
+    @DisplayName("200: /api/auth/check-admin -- correct admin jwt")
+    void checkValidAdminJwt() throws Exception {
+      User admin = createUserWithRole(Role.ROLE_ADMIN);
+
+      mockMvc
+          .perform(
+              post("/api/auth/check-admin")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + jwtUtils.generateToken(admin)))
+          .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("403: /api/auth/check-admin -- incorrect manager jwt")
+    void checkInvalidManagerJwt() throws Exception {
+      User admin = createUserWithRole(Role.ROLE_MANAGER);
+
+      mockMvc
+          .perform(
+              post("/api/auth/check-admin")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + jwtUtils.generateToken(admin)))
+          .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("200: /api/auth/check-manager -- correct admin jwt")
+    void checkValidAdminJwtManager() throws Exception {
+      User admin = createUserWithRole(Role.ROLE_ADMIN);
+
+      mockMvc
+          .perform(
+              post("/api/auth/check-manager")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + jwtUtils.generateToken(admin)))
+          .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("200: /api/auth/check-manager -- incorrect manager jwt")
+    void checkValidManagerJwtManager() throws Exception {
+      User admin = createUserWithRole(Role.ROLE_MANAGER);
+
+      mockMvc
+          .perform(
+              post("/api/auth/check-manager")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + jwtUtils.generateToken(admin)))
+          .andExpect(status().isOk());
+    }
+  }
+
   @Nested
   @DisplayName("/api/auth/register -- Registration Tests")
   class RegistrationTests {

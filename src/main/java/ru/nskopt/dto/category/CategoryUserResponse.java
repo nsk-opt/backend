@@ -10,5 +10,5 @@ import lombok.NoArgsConstructor;
 public class CategoryUserResponse {
   private Long id;
   private String name;
-  private Long[] images;
+  private Long[] imagesIds;
 }
