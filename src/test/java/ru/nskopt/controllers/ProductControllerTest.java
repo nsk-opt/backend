@@ -539,6 +539,31 @@ class ProductControllerTest {
     }
 
     @Test
+    void getProductByIdAdmin_checkAllFields() throws Exception {
+      Product product =
+          createProduct(
+              "Test Product",
+              10,
+              "Test Description",
+              new BigDecimal("100.00"),
+              new BigDecimal("150.00"));
+
+      mockMvc
+          .perform(
+              get("/api/products/" + product.getId())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + adminToken))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.id").value(product.getId()))
+          .andExpect(jsonPath("$.name").value(product.getName()))
+          .andExpect(jsonPath("$.availability").value(product.getAvailability()))
+          .andExpect(jsonPath("$.description").value(product.getDescription()))
+          .andExpect(jsonPath("$.cost").exists())
+          .andExpect(jsonPath("$.cost.wholesalePrice").value(100.0))
+          .andExpect(jsonPath("$.cost.retailPrice").value(150.0));
+    }
+
+    @Test
     void createProduct_verification_negativeAvailability() throws Exception {
       ProductUpdateRequest request =
           createRequest("New Product", -5, new BigDecimal("200.00"), new BigDecimal("300.00"));

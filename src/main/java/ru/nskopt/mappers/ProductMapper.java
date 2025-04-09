@@ -2,6 +2,7 @@ package ru.nskopt.mappers;
 
 import java.util.Set;
 import org.mapstruct.*;
+import ru.nskopt.dto.product.ProductAdminResponse;
 import ru.nskopt.dto.product.ProductUpdateRequest;
 import ru.nskopt.dto.product.ProductUserResponse;
 import ru.nskopt.entities.Product;
@@ -16,6 +17,9 @@ public interface ProductMapper {
   @Mapping(target = "price", source = "cost.retailPrice")
   @Mapping(target = "imagesIds", source = "images")
   ProductUserResponse toUserResponse(Product product);
+
+  @Mapping(target = "imagesIds", source = "images")
+  ProductAdminResponse toAdminResponse(Product product);
 
   void updateProductFromRequest(ProductUpdateRequest request, @MappingTarget Product product);
 

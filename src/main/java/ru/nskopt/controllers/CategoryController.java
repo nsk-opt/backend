@@ -7,7 +7,9 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,6 +23,7 @@ import ru.nskopt.dto.category.CategoryUpdateRequest;
 import ru.nskopt.dto.category.CategoryUserResponse;
 import ru.nskopt.dto.product.ProductUserResponse;
 import ru.nskopt.services.CategoryService;
+import ru.nskopt.utils.SecurityUtils;
 
 @RestController
 @RequestMapping("/api/categories")
@@ -29,22 +32,24 @@ import ru.nskopt.services.CategoryService;
 public class CategoryController {
 
   private final CategoryService categoryService;
+  private final SecurityUtils securityUtils;
 
   @GetMapping
-  @Operation(
-      summary = "Получить все категории",
-      description = "Возвращает список всех доступных категорий.")
-  public List<CategoryUserResponse> getAllCategories() {
-    return categoryService.findAll();
+  @Operation(summary = "Получить все категории")
+  public ResponseEntity<?> getAllCategories(Authentication authentication) {
+    if (securityUtils.hasManagerRole(authentication))
+      return ResponseEntity.ok(categoryService.findAllAdmin());
+
+    return ResponseEntity.ok(categoryService.findAll());
   }
 
   @GetMapping("/{id}")
-  @Operation(
-      summary = "Получить категорию по ID",
-      description = "Возвращает категорию по её уникальному идентификатору.")
-  public CategoryUserResponse getCategoryById(
-      @Parameter(description = "ID категории", example = "1") @PathVariable Long id) {
-    return categoryService.findById(id);
+  @Operation(summary = "Получить категорию по ID")
+  public ResponseEntity<?> getCategoryById(@PathVariable Long id, Authentication authentication) {
+    if (securityUtils.hasManagerRole(authentication))
+      return ResponseEntity.ok(categoryService.findByIdAdmin(id));
+
+    return ResponseEntity.ok(categoryService.findById(id));
   }
 
   @PostMapping

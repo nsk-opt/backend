@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.nskopt.dto.product.ProductAdminResponse;
 import ru.nskopt.dto.product.ProductUpdateRequest;
 import ru.nskopt.dto.product.ProductUserResponse;
 import ru.nskopt.entities.Category;
@@ -36,6 +37,19 @@ public class ProductService {
   @Transactional(readOnly = true)
   public ProductUserResponse findById(Long id) {
     return productMapper.toUserResponse(
+        productRepository
+            .findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Product not found " + id)));
+  }
+
+  @Transactional(readOnly = true)
+  public List<ProductAdminResponse> findAllAdmin() {
+    return productRepository.findAll().stream().map(productMapper::toAdminResponse).toList();
+  }
+
+  @Transactional(readOnly = true)
+  public ProductAdminResponse findByIdAdmin(Long id) {
+    return productMapper.toAdminResponse(
         productRepository
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Product not found " + id)));

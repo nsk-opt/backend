@@ -307,6 +307,18 @@ class CategoryControllerTest {
     }
 
     @Test
+    void testGetCategoryById_adminResponse() throws Exception {
+      mvc.perform(
+              get("/api/categories/" + existsCategory.getId())
+                  .header("Authorization", "Bearer " + managerToken)
+                  .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$.id").value(existsCategory.getId()))
+          .andExpect(jsonPath("$.name").value(existsCategory.getName()));
+    }
+
+    @Test
     void updateCategory_notExists() throws Exception {
       categoryRepository.deleteAll();
 
@@ -523,6 +535,18 @@ class CategoryControllerTest {
       sendCategory.setId(receiveCategory.getId());
 
       assertEquals(receiveCategory, sendCategory);
+    }
+
+    @Test
+    void testGetCategoryById_adminResponse() throws Exception {
+      mvc.perform(
+              get("/api/categories/" + existsCategory.getId())
+                  .header("Authorization", "Bearer " + adminToken)
+                  .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$.id").value(existsCategory.getId()))
+          .andExpect(jsonPath("$.name").value(existsCategory.getName()));
     }
 
     @Test
@@ -800,6 +824,18 @@ class CategoryControllerTest {
   @Nested
   @DisplayName("/api/categories -- User access test")
   class UserAccessTest {
+    @Test
+    void testGetCategoryById_userResponse() throws Exception {
+      mvc.perform(
+              get("/api/categories/" + existsCategory.getId())
+                  .header("Authorization", "Bearer " + userToken)
+                  .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$.id").value(existsCategory.getId()))
+          .andExpect(jsonPath("$.name").value(existsCategory.getName()));
+    }
+
     @Test
     void createCategory_success() throws Exception {
       categoryRepository.deleteAll();

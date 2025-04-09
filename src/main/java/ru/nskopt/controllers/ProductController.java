@@ -7,7 +7,9 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.nskopt.dto.product.ProductUpdateRequest;
 import ru.nskopt.dto.product.ProductUserResponse;
 import ru.nskopt.services.ProductService;
+import ru.nskopt.utils.SecurityUtils;
 
 @RestController
 @RequestMapping(value = "/api/products")
@@ -30,22 +33,24 @@ import ru.nskopt.services.ProductService;
 public class ProductController {
 
   private final ProductService productService;
+  private final SecurityUtils securityUtils;
 
   @GetMapping
-  @Operation(
-      summary = "Получить все товары",
-      description = "Возвращает список всех доступных товаров.")
-  public List<ProductUserResponse> getAllProducts() {
-    return productService.findAll();
+  @Operation(summary = "Получить все продукты")
+  public ResponseEntity<?> getAllCategories(Authentication authentication) {
+    if (securityUtils.hasManagerRole(authentication))
+      return ResponseEntity.ok(productService.findAllAdmin());
+
+    return ResponseEntity.ok(productService.findAll());
   }
 
   @GetMapping("/{id}")
-  @Operation(
-      summary = "Получить товар по ID",
-      description = "Возвращает товар по его уникальному идентификатору.")
-  public ProductUserResponse getProductById(
-      @Parameter(description = "ID товара", example = "1") @PathVariable Long id) {
-    return productService.findById(id);
+  @Operation(summary = "Получить продукт по ID")
+  public ResponseEntity<?> getCategoryById(@PathVariable Long id, Authentication authentication) {
+    if (securityUtils.hasManagerRole(authentication))
+      return ResponseEntity.ok(productService.findByIdAdmin(id));
+
+    return ResponseEntity.ok(productService.findById(id));
   }
 
   @PostMapping

@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.nskopt.dto.category.CategoryAdminResponse;
 import ru.nskopt.dto.category.CategoryUpdateRequest;
 import ru.nskopt.dto.category.CategoryUserResponse;
 import ru.nskopt.dto.product.ProductUserResponse;
@@ -36,6 +37,19 @@ public class CategoryService {
   @Transactional(readOnly = true)
   public CategoryUserResponse findById(Long id) {
     return categoryMapper.toUserResponse(
+        categoryRepository
+            .findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Category not found " + id)));
+  }
+
+  @Transactional(readOnly = true)
+  public List<CategoryAdminResponse> findAllAdmin() {
+    return categoryRepository.findAll().stream().map(categoryMapper::toAdminResponse).toList();
+  }
+
+  @Transactional(readOnly = true)
+  public CategoryAdminResponse findByIdAdmin(Long id) {
+    return categoryMapper.toAdminResponse(
         categoryRepository
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Category not found " + id)));

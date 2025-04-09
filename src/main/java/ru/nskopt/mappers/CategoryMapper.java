@@ -2,6 +2,7 @@ package ru.nskopt.mappers;
 
 import java.util.Set;
 import org.mapstruct.*;
+import ru.nskopt.dto.category.CategoryAdminResponse;
 import ru.nskopt.dto.category.CategoryUpdateRequest;
 import ru.nskopt.dto.category.CategoryUserResponse;
 import ru.nskopt.entities.Category;
@@ -16,6 +17,9 @@ public interface CategoryMapper {
 
   @Mapping(target = "imagesIds", source = "images")
   CategoryUserResponse toUserResponse(Category category);
+
+  @Mapping(target = "imagesIds", source = "images")
+  CategoryAdminResponse toAdminResponse(Category category);
 
   void updateCategoryFromRequest(CategoryUpdateRequest request, @MappingTarget Category category);
 
