@@ -2,6 +2,7 @@ package ru.nskopt.controllers;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,6 +18,7 @@ import ru.nskopt.services.UserService;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Slf4j
 public class AuthController {
   private final UserService authService;
 
@@ -31,11 +33,17 @@ public class AuthController {
     return authService.authenticate(request);
   }
 
+  @ResponseStatus(HttpStatus.OK)
   @PostMapping("/check-admin")
   @PreAuthorize("hasAnyRole('ADMIN')")
-  public void checkAdmin() {}
+  public void checkAdmin() {
+    log.info("Admin role validated.");
+  }
 
+  @ResponseStatus(HttpStatus.OK)
   @PostMapping("/check-manager")
   @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-  public void checkManager() {}
+  public void checkManager() {
+    log.info("Manager role validated.");
+  }
 }
