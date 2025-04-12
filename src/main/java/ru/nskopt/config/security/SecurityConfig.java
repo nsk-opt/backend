@@ -58,7 +58,7 @@ public class SecurityConfig {
         registry
             .addMapping("/**")
             .allowedOrigins("*")
-            .allowedMethods("GET", "POST", "OPTIONS")
+            .allowedMethods("GET", "POST", "OPTIONS", "PUT", "DELETE")
             .allowedHeaders("*")
             .allowCredentials(false);
       }
