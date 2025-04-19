@@ -12,6 +12,9 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       SSL_KEY_PASSWORD: ${SSL_KEY_PASSWORD}
       SERVER_DOMAIN: ${SERVER_DOMAIN}
+      IMAGE_QUALITY: ${IMAGE_QUALITY}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_EXPIRATION_TIME: ${JWT_EXPIRATION_TIME}
 
     ports:
       - "8443:8443"
@@ -35,6 +38,9 @@ services:
       POSTGRES_PORT: ${DB_PORT}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+
+    ports:
+      - "5432:5432"
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -61,6 +67,9 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       SSL_KEY_PASSWORD: ${SSL_KEY_PASSWORD}
       SERVER_DOMAIN: ${SERVER_DOMAIN}
+      IMAGE_QUALITY: ${IMAGE_QUALITY}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_EXPIRATION_TIME: ${JWT_EXPIRATION_TIME}
 
     volumes:
       - ./reports:/app/build/reports

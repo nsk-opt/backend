@@ -1,19 +1,15 @@
-package ru.nskopt.models.requests;
+package ru.nskopt.dto.product;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
-import java.util.HashSet;
-import java.util.Set;
 import lombok.Data;
-import ru.nskopt.models.dtos.ImageDto;
-import ru.nskopt.models.entities.Cost;
+import ru.nskopt.entities.Cost;
 
 @Data
-public class UpdateProductRequest {
+public class ProductUpdateRequest {
   @NotBlank(message = "Name cannot be blank")
   @Size(min = 3, max = 16, message = "The length of the name should be in the range from 3 to 16")
   @Schema(description = "Название товара", example = "Кроссовки Nike air Monarch IV")
@@ -29,9 +25,4 @@ public class UpdateProductRequest {
 
   @Schema(description = "Описание товара", example = "Материал ткань")
   private String description;
-
-  @NotEmpty(message = "Must contains at least one image")
-  @Valid
-  @Schema(description = "Список изображений товара")
-  private Set<ImageDto> images = new HashSet<>();
 }

@@ -5,9 +5,11 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,10 +20,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import ru.nskopt.models.entities.Category;
-import ru.nskopt.models.entities.Product;
-import ru.nskopt.models.requests.UpdateProductRequest;
+import ru.nskopt.dto.product.ProductUpdateRequest;
+import ru.nskopt.dto.product.ProductUserResponse;
 import ru.nskopt.services.ProductService;
+import ru.nskopt.utils.SecurityUtils;
 
 @RestController
 @RequestMapping(value = "/api/products")
@@ -31,44 +33,50 @@ import ru.nskopt.services.ProductService;
 public class ProductController {
 
   private final ProductService productService;
+  private final SecurityUtils securityUtils;
 
   @GetMapping
-  @Operation(
-      summary = "Получить все товары",
-      description = "Возвращает список всех доступных товаров.")
-  public List<Product> getAllProducts() {
-    return productService.findAll();
+  @Operation(summary = "Получить все продукты")
+  public ResponseEntity<?> getAllCategories(Authentication authentication) {
+    if (securityUtils.hasManagerRole(authentication))
+      return ResponseEntity.ok(productService.findAllAdmin());
+
+    return ResponseEntity.ok(productService.findAll());
   }
 
   @GetMapping("/{id}")
-  @Operation(
-      summary = "Получить товар по ID",
-      description = "Возвращает товар по его уникальному идентификатору.")
-  public Product getProductById(
-      @Parameter(description = "ID товара", example = "1") @PathVariable Long id) {
-    return productService.findById(id);
+  @Operation(summary = "Получить продукт по ID")
+  public ResponseEntity<?> getCategoryById(@PathVariable Long id, Authentication authentication) {
+    if (securityUtils.hasManagerRole(authentication))
+      return ResponseEntity.ok(productService.findByIdAdmin(id));
+
+    return ResponseEntity.ok(productService.findById(id));
   }
 
   @PostMapping
+  @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
   @ResponseStatus(HttpStatus.CREATED)
   @Operation(
       summary = "Создать новый товар",
       description = "Создаёт новый товар на основе переданных данных.")
-  public Product createProduct(@Valid @RequestBody UpdateProductRequest updateProductRequest) {
+  public ProductUserResponse createProduct(
+      @Valid @RequestBody ProductUpdateRequest updateProductRequest) {
     return productService.save(updateProductRequest);
   }
 
   @PutMapping("/{id}")
+  @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
   @Operation(
       summary = "Обновить товар по ID",
       description = "Обновляет данные товара по его уникальному идентификатору.")
-  public Product updateProduct(
+  public ProductUserResponse updateProduct(
       @Parameter(description = "ID товара", example = "1") @PathVariable Long id,
-      @Valid @RequestBody UpdateProductRequest updateProductRequest) {
+      @Valid @RequestBody ProductUpdateRequest updateProductRequest) {
     return productService.update(id, updateProductRequest);
   }
 
   @DeleteMapping("/{id}")
+  @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @Operation(
       summary = "Удалить товар по ID",
@@ -79,6 +87,7 @@ public class ProductController {
   }
 
   @PutMapping("/{productId}/categories")
+  @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
   @ResponseStatus(HttpStatus.OK)
   @Operation(
       summary = "Обновить категории для товара",
@@ -89,13 +98,24 @@ public class ProductController {
     productService.updateCategories(productId, categoryIds);
   }
 
-  @GetMapping("/{productId}/categories")
+  @PutMapping("/{productId}/images")
+  @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
   @ResponseStatus(HttpStatus.OK)
   @Operation(
-      summary = "Получить категории товара",
-      description = "Возвращает набор категорий для товара по его уникальному идентификатору.")
-  public Set<Category> getCategories(
+      summary = "Обновить изображения товара",
+      description = "Обновляет список изображений для товара по его уникальному идентификатору.")
+  public void updateImages(
+      @Parameter(description = "ID товара", example = "1") @PathVariable Long productId,
+      @RequestBody List<Long> imageIds) {
+    productService.updateImages(productId, imageIds);
+  }
+
+  @GetMapping("/{productId}/images")
+  @Operation(
+      summary = "Получить ID изображений товара",
+      description = "Возвращает список ID изображений, связанных с товаром.")
+  public List<Long> getImagesIds(
       @Parameter(description = "ID товара", example = "1") @PathVariable Long productId) {
-    return productService.getCategoriesByProductId(productId);
+    return productService.getImagesIds(productId);
   }
 }

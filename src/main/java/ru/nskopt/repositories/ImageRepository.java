@@ -2,7 +2,7 @@ package ru.nskopt.repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import ru.nskopt.entities.Category;
+import ru.nskopt.entities.image.Image;
 
 @Repository
-public interface CategoryRepository extends JpaRepository<Category, Long> {}
+public interface ImageRepository extends JpaRepository<Image, Long> {}

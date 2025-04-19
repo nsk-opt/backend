@@ -1,3 +1,7 @@
+app:
+  image:
+    quality: ${IMAGE_QUALITY}
+
 spring:
   datasource:
     url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
@@ -21,6 +25,10 @@ logging:
   level:
     root: WARN
     "[ru.nskopt]": INFO
+
+jwt:
+  secret-key: ${JWT_SECRET_KEY}
+  expiration-time: ${JWT_EXPIRATION_TIME}
 
 server:
   port: 8443

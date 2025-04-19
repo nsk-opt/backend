@@ -1,5 +1,7 @@
 package ru.nskopt.controllers;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -12,48 +14,117 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.transaction.Transactional;
+import java.math.BigDecimal;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.nskopt.App;
+import ru.nskopt.dto.category.CategoryUpdateRequest;
+import ru.nskopt.entities.Category;
+import ru.nskopt.entities.Cost;
+import ru.nskopt.entities.Product;
+import ru.nskopt.entities.image.Image;
+import ru.nskopt.entities.user.Role;
+import ru.nskopt.entities.user.User;
 import ru.nskopt.mappers.CategoryMapper;
-import ru.nskopt.models.dtos.ImageDto;
-import ru.nskopt.models.entities.Category;
-import ru.nskopt.models.entities.Image;
-import ru.nskopt.models.requests.UpdateCategoryRequest;
 import ru.nskopt.repositories.CategoryRepository;
+import ru.nskopt.repositories.ImageRepository;
+import ru.nskopt.repositories.ProductRepository;
+import ru.nskopt.repositories.UserRepository;
+import ru.nskopt.utils.JwtUtils;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, classes = App.class)
 @AutoConfigureMockMvc
+@Transactional
 class CategoryControllerTest {
 
-  @Autowired private MockMvc mvc;
+  @Autowired MockMvc mvc;
 
-  @Autowired private CategoryRepository repository;
+  @Autowired CategoryRepository categoryRepository;
+  @Autowired ImageRepository imageRepository;
+  @Autowired UserRepository userRepository;
 
-  private ObjectMapper objectMapper = new ObjectMapper();
-
+  final ObjectMapper objectMapper = new ObjectMapper();
+  @Autowired PasswordEncoder passwordEncoder;
   @Autowired CategoryMapper categoryMapper;
+  @Autowired JwtUtils jwtUtils;
 
-  private Category existsCategory;
+  Category existsCategory;
+  User admin;
+  String adminToken;
+
+  User manager;
+  String managerToken;
+
+  User user;
+  String userToken;
+
+  @Autowired private ProductRepository productRepository;
+  Image existsImage;
 
   void refillDb() {
-    repository.deleteAll();
+    categoryRepository.deleteAll();
+    userRepository.deleteAll();
+
+    Image image = new Image();
+    image.setData("sample data".getBytes());
+    image = imageRepository.save(image);
 
     existsCategory = new Category();
     existsCategory.setName("Pants");
-    existsCategory.setImage(new Image(null, "https://imgur.com/testImage"));
+    existsImage = imageRepository.save(image);
+    existsCategory.setImages(Set.of(image));
 
-    repository.save(existsCategory);
+    categoryRepository.save(existsCategory);
+  }
+
+  void createAdmin() {
+    User user = new User();
+    user.setUsername("username123213");
+    user.setPassword(passwordEncoder.encode("footerNeck8273te"));
+    user.setRole(Role.ROLE_ADMIN);
+
+    admin = userRepository.save(user);
+    adminToken = jwtUtils.generateToken(user);
+  }
+
+  void createManager() {
+    User user = new User();
+    user.setUsername("manager123896192836");
+    user.setPassword(passwordEncoder.encode("footer322Neck8273te"));
+    user.setRole(Role.ROLE_ADMIN);
+
+    manager = userRepository.save(user);
+    managerToken = jwtUtils.generateToken(user);
+  }
+
+  void createUser() {
+    User user = new User();
+    user.setUsername("user123896192836");
+    user.setPassword(passwordEncoder.encode("footer322Neck8273te"));
+    user.setRole(Role.ROLE_USER);
+
+    this.user = userRepository.save(user);
+    this.userToken = jwtUtils.generateToken(user);
   }
 
   @BeforeEach
   void setup() {
     refillDb();
+    createAdmin();
+    createManager();
+    createUser();
   }
 
   public Category getCategoryFromResponse(String response) throws JsonProcessingException {
@@ -62,28 +133,988 @@ class CategoryControllerTest {
     Long id = jsonNode.get("id").asLong();
     String name = jsonNode.get("name").asText();
 
-    JsonNode imageNode = jsonNode.get("image");
-    Image image = null;
-    if (imageNode != null) {
-      Long imageId = imageNode.get("id").asLong();
-      String imageLink = imageNode.get("link").asText();
-      image = new Image(imageId, imageLink);
-    }
-
     Category category = new Category();
     category.setId(id);
     category.setName(name);
-    category.setImage(image);
 
     return category;
   }
 
-  boolean isCategoriesEquals(String firstResponse, String secondResponse)
-      throws JsonProcessingException {
-    Category firstCategory = getCategoryFromResponse(firstResponse);
-    Category secondCategory = getCategoryFromResponse(secondResponse);
+  @Nested
+  @DisplayName("/api/categories -- Manager access test")
+  class ManagerAccessTest {
+    @Test
+    void createCategory_success() throws Exception {
+      categoryRepository.deleteAll();
 
-    return firstCategory.equals(secondCategory);
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
+      request.setName("Pants");
+
+      Category sendCategory = categoryMapper.toCategory(request);
+
+      String responseString =
+          mvc.perform(
+                  post("/api/categories")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .header("Authorization", "Bearer " + managerToken)
+                      .content(objectMapper.writeValueAsString(request)))
+              .andExpect(status().isCreated())
+              .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      Category receiveCategory = getCategoryFromResponse(responseString);
+      sendCategory.setId(receiveCategory.getId());
+
+      assertEquals(receiveCategory, sendCategory);
+    }
+
+    @Test
+    void createCategory_success_2() throws Exception {
+      categoryRepository.deleteAll();
+
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
+      request.setName("Pan");
+
+      Category sendCategory = categoryMapper.toCategory(request);
+
+      String responseString =
+          mvc.perform(
+                  post("/api/categories")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .header("Authorization", "Bearer " + managerToken)
+                      .content(objectMapper.writeValueAsString(request)))
+              .andExpect(status().isCreated())
+              .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      Category receiveCategory = getCategoryFromResponse(responseString);
+      sendCategory.setId(receiveCategory.getId());
+
+      assertEquals(receiveCategory, sendCategory);
+    }
+
+    @Test
+    void createCategory_success_3() throws Exception {
+      categoryRepository.deleteAll();
+
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
+      request.setName("Pangkjreodjtjed");
+
+      Category sendCategory = categoryMapper.toCategory(request);
+
+      String responseString =
+          mvc.perform(
+                  post("/api/categories")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .header("Authorization", "Bearer " + managerToken)
+                      .content(objectMapper.writeValueAsString(request)))
+              .andExpect(status().isCreated())
+              .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      Category receiveCategory = getCategoryFromResponse(responseString);
+      sendCategory.setId(receiveCategory.getId());
+
+      assertEquals(receiveCategory, sendCategory);
+    }
+
+    @Test
+    void createCategory_nameTooShort() throws Exception {
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
+      request.setName("Pa");
+
+      mvc.perform(
+              post("/api/categories")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + managerToken)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isBadRequest())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$.error").exists());
+    }
+
+    @Test
+    void createCategory_nameTooLong() throws Exception {
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
+      request.setName("Pantsjh uhrwkdjre");
+
+      mvc.perform(
+              post("/api/categories")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + managerToken)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isBadRequest())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$.error").exists());
+    }
+
+    @Test
+    void updateCategory_success() throws Exception {
+      categoryRepository.deleteAll();
+
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
+      request.setName("Pants");
+
+      Category sendCategory = categoryMapper.toCategory(request);
+
+      String responseString =
+          mvc.perform(
+                  post("/api/categories")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .header("Authorization", "Bearer " + managerToken)
+                      .content(objectMapper.writeValueAsString(request)))
+              .andExpect(status().isCreated())
+              .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      Category receiveCategory = getCategoryFromResponse(responseString);
+      sendCategory.setId(receiveCategory.getId());
+
+      assertEquals(receiveCategory, sendCategory);
+
+      //
+      //
+      //
+
+      request.setName("Sweater");
+
+      sendCategory = categoryMapper.toCategory(request);
+
+      responseString =
+          mvc.perform(
+                  put("/api/categories/" + receiveCategory.getId())
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .header("Authorization", "Bearer " + managerToken)
+                      .content(objectMapper.writeValueAsString(request)))
+              .andExpect(status().isOk())
+              .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      receiveCategory = getCategoryFromResponse(responseString);
+      sendCategory.setId(receiveCategory.getId());
+
+      assertEquals(receiveCategory, sendCategory);
+    }
+
+    @Test
+    void testGetCategoryById_adminResponse() throws Exception {
+      mvc.perform(
+              get("/api/categories/" + existsCategory.getId())
+                  .header("Authorization", "Bearer " + managerToken)
+                  .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$.id").value(existsCategory.getId()))
+          .andExpect(jsonPath("$.name").value(existsCategory.getName()));
+    }
+
+    @Test
+    void updateCategory_notExists() throws Exception {
+      categoryRepository.deleteAll();
+
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
+      request.setName("Pants");
+
+      mvc.perform(
+              put("/api/categories/999")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + managerToken)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isNotFound())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON));
+    }
+
+    @Test
+    void deleteCategory_success() throws Exception {
+      mvc.perform(
+              delete("/api/categories/" + existsCategory.getId())
+                  .header("Authorization", "Bearer " + managerToken))
+          .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void deleteCategory_notExists() throws Exception {
+      categoryRepository.deleteAll();
+
+      mvc.perform(
+              delete("/api/categories/" + existsCategory.getId())
+                  .header("Authorization", "Bearer " + managerToken)
+                  .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isNotFound())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON));
+    }
+
+    @Test
+    @Transactional
+    void addImage_successful_one() throws Exception {
+      Image image = new Image();
+      image.setData("sample data".getBytes());
+      imageRepository.save(image);
+
+      Category category = new Category();
+      category.setName("test category");
+      categoryRepository.save(category);
+
+      mvc.perform(
+              put("/api/categories/" + category.getId() + "/images")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + managerToken)
+                  .content(objectMapper.writeValueAsString(List.of(image.getId()))))
+          .andExpect(status().isOk());
+
+      assertEquals(1, category.getImages().size());
+    }
+
+    @Test
+    @Transactional
+    void addImage_successful_multiple() throws Exception {
+      Image image1 = new Image();
+      image1.setData("sample data first".getBytes());
+      imageRepository.save(image1);
+
+      Image image2 = new Image();
+      image2.setData("sample data second".getBytes());
+      imageRepository.save(image2);
+
+      Category category = new Category();
+      category.setName("test category");
+      categoryRepository.save(category);
+
+      mvc.perform(
+              put("/api/categories/" + category.getId() + "/images")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + managerToken)
+                  .content(
+                      objectMapper.writeValueAsString(List.of(image1.getId(), image2.getId()))))
+          .andExpect(status().isOk());
+
+      assertEquals(2, category.getImages().size());
+    }
+
+    @Test
+    @Transactional
+    void addImage_not_exists_one() throws Exception {
+
+      Category category = new Category();
+      category.setName("test category");
+      categoryRepository.save(category);
+
+      mvc.perform(
+              put("/api/categories/" + category.getId() + "/images")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + managerToken)
+                  .content(objectMapper.writeValueAsString(List.of(1))))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @Transactional
+    void addImage_not_exists_one_and_one_exists() throws Exception {
+      Image image = new Image();
+      image.setData("sample image data".getBytes());
+
+      Category category = new Category();
+      category.setName("test category");
+      category.getImages().add(image);
+      categoryRepository.save(category);
+
+      mvc.perform(
+              put("/api/categories/" + category.getId() + "/images")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + managerToken)
+                  .content(objectMapper.writeValueAsString(List.of(1, image.getId()))))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @Transactional
+    void addImage_not_exists_multiple() throws Exception {
+
+      Category category = new Category();
+      category.setName("test category");
+      categoryRepository.save(category);
+
+      mvc.perform(
+              put("/api/categories/" + category.getId() + "/images")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + managerToken)
+                  .content(objectMapper.writeValueAsString(List.of(1, 2, 3))))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @Transactional
+    void deleteOrphanImage_successful() throws Exception {
+      Image image = new Image();
+      image.setData("sample data first".getBytes());
+      imageRepository.save(image);
+
+      Image orphanImage = new Image();
+      orphanImage.setData("sample data second".getBytes());
+      imageRepository.save(orphanImage);
+
+      Category category = new Category();
+      category.setName("test category");
+      category.getImages().add(image);
+      category.getImages().add(orphanImage);
+      categoryRepository.save(category);
+
+      mvc.perform(
+              put("/api/categories/" + category.getId() + "/images")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + managerToken)
+                  .content(objectMapper.writeValueAsString(List.of(image.getId()))))
+          .andExpect(status().isOk());
+
+      assertFalse(imageRepository.existsById(orphanImage.getId()));
+    }
+  }
+
+  @Nested
+  @DisplayName("/api/categories -- Admin access test")
+  class AdminAccessTest {
+    @Test
+    void createCategory_success() throws Exception {
+      categoryRepository.deleteAll();
+
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
+      request.setName("Pants");
+
+      Category sendCategory = categoryMapper.toCategory(request);
+
+      String responseString =
+          mvc.perform(
+                  post("/api/categories")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .header("Authorization", "Bearer " + adminToken)
+                      .content(objectMapper.writeValueAsString(request)))
+              .andExpect(status().isCreated())
+              .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      Category receiveCategory = getCategoryFromResponse(responseString);
+      sendCategory.setId(receiveCategory.getId());
+
+      assertEquals(receiveCategory, sendCategory);
+    }
+
+    @Test
+    void createCategory_success_2() throws Exception {
+      categoryRepository.deleteAll();
+
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
+      request.setName("Pan");
+
+      Category sendCategory = categoryMapper.toCategory(request);
+
+      String responseString =
+          mvc.perform(
+                  post("/api/categories")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .header("Authorization", "Bearer " + adminToken)
+                      .content(objectMapper.writeValueAsString(request)))
+              .andExpect(status().isCreated())
+              .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      Category receiveCategory = getCategoryFromResponse(responseString);
+      sendCategory.setId(receiveCategory.getId());
+
+      assertEquals(receiveCategory, sendCategory);
+    }
+
+    @Test
+    void testGetCategoryById_adminResponse() throws Exception {
+      mvc.perform(
+              get("/api/categories/" + existsCategory.getId())
+                  .header("Authorization", "Bearer " + adminToken)
+                  .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$.id").value(existsCategory.getId()))
+          .andExpect(jsonPath("$.name").value(existsCategory.getName()));
+    }
+
+    @Test
+    void createCategory_success_3() throws Exception {
+      categoryRepository.deleteAll();
+
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
+      request.setName("Pangkjreodjtjed");
+
+      Category sendCategory = categoryMapper.toCategory(request);
+
+      String responseString =
+          mvc.perform(
+                  post("/api/categories")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .header("Authorization", "Bearer " + adminToken)
+                      .content(objectMapper.writeValueAsString(request)))
+              .andExpect(status().isCreated())
+              .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      Category receiveCategory = getCategoryFromResponse(responseString);
+      sendCategory.setId(receiveCategory.getId());
+
+      assertEquals(receiveCategory, sendCategory);
+    }
+
+    @Test
+    void createCategory_nameTooShort() throws Exception {
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
+      request.setName("Pa");
+
+      mvc.perform(
+              post("/api/categories")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + adminToken)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isBadRequest())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$.error").exists());
+    }
+
+    @Test
+    void createCategory_nameTooLong() throws Exception {
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
+      //noinspection SpellCheckingInspection
+      request.setName("Pantsjh uhrwkdjre");
+
+      mvc.perform(
+              post("/api/categories")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + adminToken)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isBadRequest())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$.error").exists());
+    }
+
+    @Test
+    void updateCategory_success() throws Exception {
+      categoryRepository.deleteAll();
+
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
+      request.setName("Pants");
+
+      Category sendCategory = categoryMapper.toCategory(request);
+
+      String responseString =
+          mvc.perform(
+                  post("/api/categories")
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .header("Authorization", "Bearer " + adminToken)
+                      .content(objectMapper.writeValueAsString(request)))
+              .andExpect(status().isCreated())
+              .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      Category receiveCategory = getCategoryFromResponse(responseString);
+      sendCategory.setId(receiveCategory.getId());
+
+      assertEquals(receiveCategory, sendCategory);
+
+      //
+      //
+      //
+
+      request.setName("Sweater");
+
+      sendCategory = categoryMapper.toCategory(request);
+
+      responseString =
+          mvc.perform(
+                  put("/api/categories/" + receiveCategory.getId())
+                      .contentType(MediaType.APPLICATION_JSON)
+                      .header("Authorization", "Bearer " + adminToken)
+                      .content(objectMapper.writeValueAsString(request)))
+              .andExpect(status().isOk())
+              .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+              .andReturn()
+              .getResponse()
+              .getContentAsString();
+
+      receiveCategory = getCategoryFromResponse(responseString);
+      sendCategory.setId(receiveCategory.getId());
+
+      assertEquals(receiveCategory, sendCategory);
+    }
+
+    @Test
+    void updateCategory_notExists() throws Exception {
+      categoryRepository.deleteAll();
+
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
+      request.setName("Pants");
+
+      mvc.perform(
+              put("/api/categories/999")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + adminToken)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isNotFound())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON));
+    }
+
+    @Test
+    void deleteCategory_success() throws Exception {
+      mvc.perform(
+              delete("/api/categories/" + existsCategory.getId())
+                  .header("Authorization", "Bearer " + adminToken))
+          .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void deleteCategory_notExists() throws Exception {
+      categoryRepository.deleteAll();
+
+      mvc.perform(
+              delete("/api/categories/" + existsCategory.getId())
+                  .header("Authorization", "Bearer " + adminToken)
+                  .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isNotFound())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON));
+    }
+
+    @Test
+    @Transactional
+    void addImage_successful_one() throws Exception {
+      Image image = new Image();
+      image.setData("sample data".getBytes());
+      imageRepository.save(image);
+
+      Category category = new Category();
+      category.setName("test category");
+      categoryRepository.save(category);
+
+      mvc.perform(
+              put("/api/categories/" + category.getId() + "/images")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + managerToken)
+                  .content(objectMapper.writeValueAsString(List.of(image.getId()))))
+          .andExpect(status().isOk());
+
+      assertEquals(1, category.getImages().size());
+    }
+
+    @Test
+    @Transactional
+    void addImage_successful_multiple() throws Exception {
+      Image image1 = new Image();
+      image1.setData("sample data first".getBytes());
+      imageRepository.save(image1);
+
+      Image image2 = new Image();
+      image2.setData("sample data second".getBytes());
+      imageRepository.save(image2);
+
+      Category category = new Category();
+      category.setName("test category");
+      categoryRepository.save(category);
+
+      mvc.perform(
+              put("/api/categories/" + category.getId() + "/images")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + managerToken)
+                  .content(
+                      objectMapper.writeValueAsString(List.of(image1.getId(), image2.getId()))))
+          .andExpect(status().isOk());
+
+      assertEquals(2, category.getImages().size());
+    }
+
+    @Test
+    @Transactional
+    void addImage_not_exists_one() throws Exception {
+
+      Category category = new Category();
+      category.setName("test category");
+      categoryRepository.save(category);
+
+      mvc.perform(
+              put("/api/categories/" + category.getId() + "/images")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + managerToken)
+                  .content(objectMapper.writeValueAsString(List.of(1))))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @Transactional
+    void addImage_not_exists_one_and_one_exists() throws Exception {
+      Image image = new Image();
+      image.setData("sample image data".getBytes());
+
+      Category category = new Category();
+      category.setName("test category");
+      category.getImages().add(image);
+      categoryRepository.save(category);
+
+      mvc.perform(
+              put("/api/categories/" + category.getId() + "/images")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + managerToken)
+                  .content(objectMapper.writeValueAsString(List.of(1, image.getId()))))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @Transactional
+    void addImage_not_exists_multiple() throws Exception {
+
+      Category category = new Category();
+      category.setName("test category");
+      categoryRepository.save(category);
+
+      mvc.perform(
+              put("/api/categories/" + category.getId() + "/images")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + managerToken)
+                  .content(objectMapper.writeValueAsString(List.of(1, 2, 3))))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @Transactional
+    void deleteOrphanImage_successful() throws Exception {
+      Image image = new Image();
+      image.setData("sample data first".getBytes());
+      imageRepository.save(image);
+
+      Image orphanImage = new Image();
+      orphanImage.setData("sample data second".getBytes());
+      imageRepository.save(orphanImage);
+
+      Category category = new Category();
+      category.setName("test category");
+      category.getImages().add(image);
+      category.getImages().add(orphanImage);
+      categoryRepository.save(category);
+
+      mvc.perform(
+              put("/api/categories/" + category.getId() + "/images")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + managerToken)
+                  .content(objectMapper.writeValueAsString(List.of(image.getId()))))
+          .andExpect(status().isOk());
+
+      assertFalse(imageRepository.existsById(orphanImage.getId()));
+    }
+  }
+
+  @Nested
+  @DisplayName("/api/categories -- User access test")
+  class UserAccessTest {
+    @Test
+    void testGetCategoryById_userResponse() throws Exception {
+      mvc.perform(
+              get("/api/categories/" + existsCategory.getId())
+                  .header("Authorization", "Bearer " + userToken)
+                  .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isOk())
+          .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$.id").value(existsCategory.getId()))
+          .andExpect(jsonPath("$.name").value(existsCategory.getName()));
+    }
+
+    @Test
+    void createCategory_success() throws Exception {
+      categoryRepository.deleteAll();
+
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
+      request.setName("Pants");
+
+      mvc.perform(
+              post("/api/categories")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + userToken)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void createCategory_success_2() throws Exception {
+      categoryRepository.deleteAll();
+
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
+      request.setName("Pan");
+
+      mvc.perform(
+              post("/api/categories")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + userToken)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void createCategory_success_3() throws Exception {
+      categoryRepository.deleteAll();
+
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
+      request.setName("Pangkjreodjtjed");
+
+      mvc.perform(
+              post("/api/categories")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + userToken)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void createCategory_nameTooShort() throws Exception {
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
+      request.setName("Pa");
+
+      mvc.perform(
+              post("/api/categories")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + userToken)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createCategory_nameTooLong() throws Exception {
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
+
+      mvc.perform(
+              post("/api/categories")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + userToken)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateCategory_success() throws Exception {
+      categoryRepository.deleteAll();
+
+      Category category = new Category();
+      category.setName("sample name");
+
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
+      request.setName("Pants");
+
+      category = categoryRepository.save(category);
+
+      mvc.perform(
+              put("/api/categories/" + category.getId())
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + userToken)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void updateCategory_notExists() throws Exception {
+      categoryRepository.deleteAll();
+
+      CategoryUpdateRequest request = new CategoryUpdateRequest();
+      request.setName("Pants");
+
+      mvc.perform(
+              put("/api/categories/999")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + userToken)
+                  .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deleteCategory_success() throws Exception {
+      mvc.perform(
+              delete("/api/categories/" + existsCategory.getId())
+                  .header("Authorization", "Bearer " + userToken))
+          .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deleteCategory_notExists() throws Exception {
+      categoryRepository.deleteAll();
+
+      mvc.perform(
+              delete("/api/categories/" + existsCategory.getId())
+                  .header("Authorization", "Bearer " + userToken)
+                  .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @Transactional
+    void addImage_successful_one() throws Exception {
+      Image image = new Image();
+      image.setData("sample data".getBytes());
+      imageRepository.save(image);
+
+      Category category = new Category();
+      category.setName("test category");
+      categoryRepository.save(category);
+
+      mvc.perform(
+              put("/api/categories/" + category.getId() + "/images")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + userToken)
+                  .content(objectMapper.writeValueAsString(List.of(image.getId()))))
+          .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @Transactional
+    void addImage_successful_multiple() throws Exception {
+      Image image1 = new Image();
+      image1.setData("sample data first".getBytes());
+      imageRepository.save(image1);
+
+      Image image2 = new Image();
+      image2.setData("sample data second".getBytes());
+      imageRepository.save(image2);
+
+      Category category = new Category();
+      category.setName("test category");
+      categoryRepository.save(category);
+
+      mvc.perform(
+              put("/api/categories/" + category.getId() + "/images")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + userToken)
+                  .content(
+                      objectMapper.writeValueAsString(List.of(image1.getId(), image2.getId()))))
+          .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @Transactional
+    void addImage_not_exists_one() throws Exception {
+
+      Category category = new Category();
+      category.setName("test category");
+      categoryRepository.save(category);
+
+      mvc.perform(
+              put("/api/categories/" + category.getId() + "/images")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + userToken)
+                  .content(objectMapper.writeValueAsString(List.of(1))))
+          .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @Transactional
+    void addImage_not_exists_one_and_one_exists() throws Exception {
+      Image image = new Image();
+      image.setData("sample image data".getBytes());
+
+      Category category = new Category();
+      category.setName("test category");
+      category.getImages().add(image);
+      categoryRepository.save(category);
+
+      mvc.perform(
+              put("/api/categories/" + category.getId() + "/images")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + userToken)
+                  .content(objectMapper.writeValueAsString(List.of(1, image.getId()))))
+          .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @Transactional
+    void addImage_not_exists_multiple() throws Exception {
+
+      Category category = new Category();
+      category.setName("test category");
+      categoryRepository.save(category);
+
+      mvc.perform(
+              put("/api/categories/" + category.getId() + "/images")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + userToken)
+                  .content(objectMapper.writeValueAsString(List.of(1, 2, 3))))
+          .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @Transactional
+    void deleteOrphanImage_successful() throws Exception {
+      Image image = new Image();
+      image.setData("sample data first".getBytes());
+      imageRepository.save(image);
+
+      Image orphanImage = new Image();
+      orphanImage.setData("sample data second".getBytes());
+      imageRepository.save(orphanImage);
+
+      Category category = new Category();
+      category.setName("test category");
+      category.getImages().add(image);
+      category.getImages().add(orphanImage);
+      categoryRepository.save(category);
+
+      mvc.perform(
+              put("/api/categories/" + category.getId() + "/images")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("Authorization", "Bearer " + userToken)
+                  .content(objectMapper.writeValueAsString(List.of(image.getId()))))
+          .andExpect(status().isForbidden());
+
+      assertTrue(imageRepository.existsById(orphanImage.getId()));
+    }
+  }
+
+  @Test
+  @Transactional
+  void getProductsIdsByCategoryIdTest() throws Exception {
+    Category category = new Category();
+    category.setName("Свитшоты");
+    category = categoryRepository.save(category);
+
+    Product product = new Product();
+    product.setName("Свиншот n1");
+    product.setCategories(new HashSet<>(Set.of(category)));
+    product.setAvailability(30);
+    product.setDescription("Описание свиншота n1");
+    product.setCost(new Cost(BigDecimal.valueOf(300), BigDecimal.valueOf(900)));
+
+    Product product2 = new Product();
+    product2.setName("Свиншот n2");
+    product2.setCategories(new HashSet<>(Set.of(category)));
+    product2.setAvailability(30);
+    product2.setDescription("Описание свиншота n2");
+    product2.setCost(new Cost(BigDecimal.valueOf(300), BigDecimal.valueOf(900)));
+
+    product = productRepository.save(product);
+    product2 = productRepository.save(product2);
+
+    category.setProducts(new HashSet<>(Set.of(product, product2)));
+    category = categoryRepository.save(category);
+
+    mvc.perform(get("/api/categories/" + category.getId() + "/products"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$").isArray())
+        .andExpect(jsonPath("$.length()").value(2))
+        .andExpect(jsonPath("$[0].id").value(product.getId()))
+        .andExpect(jsonPath("$[1].id").value(product2.getId()));
   }
 
   @Test
@@ -92,12 +1123,13 @@ class CategoryControllerTest {
         .andExpect(status().isOk())
         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$[0].id").value(existsCategory.getId()))
-        .andExpect(jsonPath("$[0].name").value(existsCategory.getName()));
+        .andExpect(jsonPath("$[0].name").value(existsCategory.getName()))
+        .andExpect(jsonPath("$[0].imagesIds[0]").value(existsImage.getId()));
   }
 
   @Test
   void getAllCategories_empty() throws Exception {
-    repository.deleteAll();
+    categoryRepository.deleteAll();
 
     mvc.perform(get("/api/categories").contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
@@ -118,209 +1150,71 @@ class CategoryControllerTest {
 
   @Test
   void testGetCategoryById_notFound() throws Exception {
-    repository.deleteAll();
+    categoryRepository.deleteAll();
 
     mvc.perform(get("/api/categories/999").contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isNotFound());
   }
 
   @Test
-  void createCategory_success() throws Exception {
-    repository.deleteAll();
+  @Transactional
+  void getImages_successful_one() throws Exception {
+    Image image = new Image();
+    image.setData("sample data first".getBytes());
+    imageRepository.save(image);
 
-    UpdateCategoryRequest request = new UpdateCategoryRequest();
-    request.setName("Pants");
-    request.setImage(new ImageDto("https://imgur.com/testImage"));
+    Category category = new Category();
+    category.setName("test category");
+    category.getImages().add(image);
+    categoryRepository.save(category);
 
-    Category sendCategory = categoryMapper.map(request);
-
-    String responseString =
-        mvc.perform(
-                post("/api/categories")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isCreated())
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
-
-    Category receiveCategory = getCategoryFromResponse(responseString);
-    sendCategory.setId(receiveCategory.getId());
-    sendCategory.getImage().setId(receiveCategory.getImage().getId());
-
-    assertTrue(receiveCategory.equals(sendCategory));
-  }
-
-  @Test
-  void createCategory_success_2() throws Exception {
-    repository.deleteAll();
-
-    UpdateCategoryRequest request = new UpdateCategoryRequest();
-    request.setName("Pan");
-    request.setImage(new ImageDto("https://imgur.com/testImage"));
-    Category sendCategory = categoryMapper.map(request);
-
-    String responseString =
-        mvc.perform(
-                post("/api/categories")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isCreated())
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
-
-    Category receiveCategory = getCategoryFromResponse(responseString);
-    sendCategory.setId(receiveCategory.getId());
-    sendCategory.getImage().setId(receiveCategory.getImage().getId());
-
-    assertTrue(receiveCategory.equals(sendCategory));
-  }
-
-  @Test
-  void createCategory_success_3() throws Exception {
-    repository.deleteAll();
-
-    UpdateCategoryRequest request = new UpdateCategoryRequest();
-    request.setName("Pangkjreodjtjed");
-    request.setImage(new ImageDto("https://imgur.com/testImage"));
-
-    Category sendCategory = categoryMapper.map(request);
-
-    String responseString =
-        mvc.perform(
-                post("/api/categories")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isCreated())
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
-
-    Category receiveCategory = getCategoryFromResponse(responseString);
-    sendCategory.setId(receiveCategory.getId());
-    sendCategory.getImage().setId(receiveCategory.getImage().getId());
-
-    assertTrue(receiveCategory.equals(sendCategory));
-  }
-
-  @Test
-  void createCategory_nameTooShort() throws Exception {
-    UpdateCategoryRequest request = new UpdateCategoryRequest();
-    request.setName("Pa");
-    request.setImage(new ImageDto("https://imgur.com/testImage"));
-
-    mvc.perform(
-            post("/api/categories")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$.error").exists());
-  }
-
-  @Test
-  void createCategory_nameTooLong() throws Exception {
-    UpdateCategoryRequest request = new UpdateCategoryRequest();
-    request.setName("Pantsjh uhrwkdjre");
-    request.setImage(new ImageDto("https://imgur.com/testImage"));
-
-    mvc.perform(
-            post("/api/categories")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isBadRequest())
-        .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-        .andExpect(jsonPath("$.error").exists());
-  }
-
-  @Test
-  void updateCategory_success() throws Exception {
-    repository.deleteAll();
-
-    UpdateCategoryRequest request = new UpdateCategoryRequest();
-    request.setName("Pants");
-    request.setImage(new ImageDto("https://imgur.com/testImage"));
-
-    Category sendCategory = categoryMapper.map(request);
-
-    String responseString =
-        mvc.perform(
-                post("/api/categories")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isCreated())
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
-
-    Category receiveCategory = getCategoryFromResponse(responseString);
-    sendCategory.setId(receiveCategory.getId());
-    sendCategory.getImage().setId(receiveCategory.getImage().getId());
-
-    assertTrue(receiveCategory.equals(sendCategory));
-
-    //
-    //
-    //
-
-    request.setName("Sweater");
-    request.setImage(new ImageDto("https://imgur.com/newImageLol"));
-
-    sendCategory = categoryMapper.map(request);
-
-    responseString =
-        mvc.perform(
-                put("/api/categories/" + receiveCategory.getId())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
+    String response =
+        mvc.perform(get("/api/categories/" + category.getId() + "/images"))
             .andExpect(status().isOk())
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andReturn()
             .getResponse()
             .getContentAsString();
 
-    receiveCategory = getCategoryFromResponse(responseString);
-    sendCategory.setId(receiveCategory.getId());
-    sendCategory.getImage().setId(receiveCategory.getImage().getId());
-
-    assertTrue(receiveCategory.equals(sendCategory));
+    assertTrue(response.contains(String.valueOf(image.getId())));
   }
 
   @Test
-  void updateCategory_notExists() throws Exception {
-    repository.deleteAll();
+  @Transactional
+  void getImages_empty() throws Exception {
+    Category category = new Category();
+    category.setName("test category");
+    categoryRepository.save(category);
 
-    UpdateCategoryRequest request = new UpdateCategoryRequest();
-    request.setName("Pants");
-    request.setImage(new ImageDto("https://imgur.com/testImage"));
-
-    mvc.perform(
-            put("/api/categories/999")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isNotFound())
-        .andExpect(content().contentType(MediaType.APPLICATION_JSON));
+    mvc.perform(get("/api/categories/" + category.getId() + "/images"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(0));
   }
 
   @Test
-  void deleteCategory_success() throws Exception {
-    mvc.perform(delete("/api/categories/" + existsCategory.getId()))
-        .andExpect(status().isNoContent());
-  }
+  @Transactional
+  void getImages_successful_multiple() throws Exception {
+    Image image1 = new Image();
+    image1.setData("sample data first".getBytes());
+    imageRepository.save(image1);
 
-  @Test
-  void deleteCategory_notExists() throws Exception {
-    repository.deleteAll();
+    Image image2 = new Image();
+    image2.setData("sample data second".getBytes());
+    imageRepository.save(image2);
 
-    mvc.perform(
-            delete("/api/categories/" + existsCategory.getId())
-                .contentType(MediaType.APPLICATION_JSON))
-        .andExpect(status().isNotFound())
-        .andExpect(content().contentType(MediaType.APPLICATION_JSON));
+    Category category = new Category();
+    category.setName("test category");
+    category.getImages().add(image1);
+    category.getImages().add(image2);
+    categoryRepository.save(category);
+
+    String response =
+        mvc.perform(get("/api/categories/" + category.getId() + "/images"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    assertTrue(response.contains(String.valueOf(image1.getId())));
+    assertTrue(response.contains(String.valueOf(image2.getId())));
   }
 }

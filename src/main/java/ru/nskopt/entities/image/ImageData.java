@@ -1,24 +1,27 @@
-package ru.nskopt.models.entities;
+package ru.nskopt.entities.image;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "images")
+@Table(name = "images_data")
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
-public class Image {
+public class ImageData {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  private String link;
+  @Lob private byte[] data;
+
+  @OneToOne(mappedBy = "imageData")
+  private Image image;
 }
